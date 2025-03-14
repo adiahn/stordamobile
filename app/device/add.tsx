@@ -18,11 +18,12 @@ export default function AddDeviceScreen() {
   const [model, setModel] = useState('');
   const [images, setImages] = useState<DeviceImage[]>([]);
 
-  const generateDeviceId = (model: string) => {
+  const generateDeviceId = (model: string, imei: string) => {
     const timestamp = Date.now().toString(36);
     const randomStr = Math.random().toString(36).substring(2, 8);
-    const cleanModel = model.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase();
-    return `${cleanModel}_${timestamp}${randomStr}`.toUpperCase();
+    const imeiPart = imei.substring(imei.length - 6);
+    const cleanModel = model.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase();
+    return `${cleanModel}_${imeiPart}_${timestamp}${randomStr}`.toUpperCase();
   };
 
   const handleAutoDetect = async () => {
@@ -46,10 +47,26 @@ export default function AddDeviceScreen() {
     }
   };
 
-  const handleAddDevice = () => {
+  const handleAddDevice = async () => {
     if (!model || !imei) return;
     
-    const deviceId = generateDeviceId(model);
+    // Check for duplicate IMEI
+    const isDuplicateImei = await checkDuplicateImei(imei);
+    if (isDuplicateImei) {
+      Alert.alert('Error', 'A device with this IMEI is already registered.');
+      return;
+    }
+    
+    // Check for duplicate MAC address if provided
+    if (macAddress) {
+      const isDuplicateMac = await checkDuplicateMac(macAddress);
+      if (isDuplicateMac) {
+        Alert.alert('Error', 'A device with this MAC address is already registered.');
+        return;
+      }
+    }
+    
+    const deviceId = generateDeviceId(model, imei);
     const newDevice = {
       id: deviceId,
       model,
@@ -69,9 +86,22 @@ export default function AddDeviceScreen() {
       );
     }
 
-    // Here you would typically save the device to your backend
+    // Here you would save the device to your backend
     console.log('New device:', newDevice);
     router.back();
+  };
+
+  // Helper functions to check for duplicates
+  const checkDuplicateImei = async (imei: string) => {
+    // In a real app, this would be an API call to your backend
+    // For demo purposes, we'll return false
+    return false;
+  };
+
+  const checkDuplicateMac = async (mac: string) => {
+    // In a real app, this would be an API call to your backend
+    // For demo purposes, we'll return false
+    return false;
   };
 
   const pickImage = async () => {
