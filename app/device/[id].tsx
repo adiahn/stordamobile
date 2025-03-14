@@ -166,12 +166,6 @@ export default function DeviceDetailsScreen() {
             <Text style={[styles.label, isDark && styles.darkLabel]}>Purchase Date:</Text>
             <Text style={[styles.value, isDark && styles.darkText]}>{device.purchaseDate}</Text>
           </View>
-          {device.purchasePrice && (
-            <View style={styles.infoRow}>
-              <Text style={[styles.label, isDark && styles.darkLabel]}>Price:</Text>
-              <Text style={[styles.value, isDark && styles.darkText]}>{device.purchasePrice}</Text>
-            </View>
-          )}
           {device.purchaseFrom && (
             <View style={styles.infoRow}>
               <Text style={[styles.label, isDark && styles.darkLabel]}>Purchased From:</Text>

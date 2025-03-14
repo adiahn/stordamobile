@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Search, AlertTriangle, BookmarkPlus, Bookmark } from 'lucide-react-native';
 import { useThemeStore } from '../../store/theme';
 import { Alert } from 'react-native';
+import { Clipboard } from '@react-native-clipboard/clipboard';
 
 interface SearchResult {
   id: string;
@@ -89,6 +90,49 @@ export default function SearchScreen() {
     </View>
   );
 
+  const SearchResult = ({ device, isDark }) => (
+    <View style={[styles.resultCard, isDark && styles.darkCard]}>
+      <View style={styles.resultHeader}>
+        <Text style={[styles.resultTitle, isDark && styles.darkText]}>Device Information</Text>
+      </View>
+      <View style={styles.resultInfo}>
+        <View style={styles.infoRow}>
+          <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
+          <Pressable 
+            onPress={() => Clipboard.setString(device.id)}
+            style={styles.copyableField}
+          >
+            <Text style={[styles.value, isDark && styles.darkText]}>{device.id}</Text>
+            <Text style={[styles.copyText, isDark && styles.darkSubText]}>Copy</Text>
+          </Pressable>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={[styles.label, isDark && styles.darkLabel]}>Model:</Text>
+          <Text style={[styles.value, isDark && styles.darkText]}>{device.model}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
+          <Text style={[styles.value, isDark && styles.darkText]}>{device.imei}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={[styles.label, isDark && styles.darkLabel]}>Current Owner:</Text>
+          <Text style={[styles.value, isDark && styles.darkText]}>{device.owner}</Text>
+        </View>
+        {device.isStolen && (
+          <View style={styles.stolenWarning}>
+            <AlertTriangle size={20} color="#dc2626" />
+            <Text style={styles.stolenText}>
+              This device has been reported as stolen
+            </Text>
+          </View>
+        )}
+      </View>
+      {expandedDevice && (
+        <ExpandedDeviceView device={expandedDevice} isDark={isDark} />
+      )}
+    </View>
+  );
+
   return (
     <ScrollView style={[styles.container, isDark && styles.darkContainer]}>
       <View style={styles.searchBox}>
@@ -105,48 +149,7 @@ export default function SearchScreen() {
       </View>
 
       {searchResult && (
-        <Pressable 
-          style={[styles.resultCard, isDark && styles.darkCard]}
-          onPress={() => setExpandedDevice(searchResult)}
-        >
-          <View style={styles.resultHeader}>
-            <Text style={[styles.resultTitle, isDark && styles.darkText]}>Device Information</Text>
-            <Pressable style={styles.saveButton} onPress={toggleSaveSearch}>
-              {isSearchSaved ? (
-                <Bookmark size={20} color={isDark ? '#0891b2' : '#0891b2'} />
-              ) : (
-                <BookmarkPlus size={20} color={isDark ? '#94a3b8' : '#64748b'} />
-              )}
-            </Pressable>
-          </View>
-          <View style={styles.resultInfo}>
-            <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
-            <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.id}</Text>
-          </View>
-          <View style={styles.resultInfo}>
-            <Text style={[styles.label, isDark && styles.darkLabel]}>Model:</Text>
-            <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.model}</Text>
-          </View>
-          <View style={styles.resultInfo}>
-            <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
-            <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.imei}</Text>
-          </View>
-          <View style={styles.resultInfo}>
-            <Text style={[styles.label, isDark && styles.darkLabel]}>Current Owner:</Text>
-            <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.owner}</Text>
-          </View>
-          {searchResult.isStolen && (
-            <View style={styles.stolenWarning}>
-              <AlertTriangle size={20} color="#dc2626" />
-              <Text style={styles.stolenText}>
-                This device has been reported as stolen
-              </Text>
-            </View>
-          )}
-          {expandedDevice && (
-            <ExpandedDeviceView device={expandedDevice} isDark={isDark} />
-          )}
-        </Pressable>
+        <SearchResult device={searchResult} isDark={isDark} />
       )}
 
       {savedSearches.length > 0 && (
@@ -248,12 +251,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e293b',
   },
-  saveButton: {
-    padding: 8,
-  },
   resultInfo: {
     flexDirection: 'row',
     marginBottom: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
   },
   label: {
     width: 120,
@@ -268,6 +272,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1e293b',
     fontWeight: '500',
+  },
+  copyableField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  copyText: {
+    color: '#64748b',
+    marginLeft: 4,
   },
   stolenWarning: {
     flexDirection: 'row',

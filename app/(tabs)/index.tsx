@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Modal, TextInput, Alert, Keyboard } from 'react-native';
 import { useState } from 'react';
 import { Plus, AlertTriangle, ArrowLeftRight, ChevronRight, X, Send } from 'lucide-react-native';
-import * as Clipboard from 'expo-clipboard';
+import { Clipboard } from '@react-native-clipboard/clipboard';
 
 import { Link, useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/theme';
@@ -375,6 +375,9 @@ export default function DevicesScreen() {
                   onChangeText={(text) => setTransferDetails(prev => ({ ...prev, recipientUsername: text }))}
                   placeholder="Enter username"
                   placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                  blurOnSubmit={true}
                 />
               </View>
               <Pressable
@@ -397,6 +400,9 @@ export default function DevicesScreen() {
                   secureTextEntry
                   keyboardType="numeric"
                   maxLength={6}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                  blurOnSubmit={true}
                 />
               </View>
               <Pressable
