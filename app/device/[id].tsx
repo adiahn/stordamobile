@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, Image, Pressable, Modal, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertTriangle, ArrowLeft, Shield, X } from 'lucide-react-native';
+import { AlertTriangle, ArrowLeft, Shield, X, Copy } from 'lucide-react-native';
 import { useState } from 'react';
 import { useThemeStore } from '../../store/theme';
+import * as Clipboard from 'expo-clipboard';
 
 interface DeviceHistory {
   date: string;
@@ -24,6 +25,7 @@ interface Device {
   purchaseDate: string;
   purchasePrice?: string;
   purchaseFrom?: string;
+  macAddress?: string;
 }
 
 export default function DeviceDetailsScreen() {
@@ -97,6 +99,20 @@ export default function DeviceDetailsScreen() {
     }
   };
 
+  // Add copyable fields
+  const CopyableField = ({ label, value, isDark }) => (
+    <View style={styles.infoRow}>
+      <Text style={[styles.label, isDark && styles.darkLabel]}>{label}:</Text>
+      <Pressable 
+        onPress={() => Clipboard.setString(value)}
+        style={styles.copyableValue}
+      >
+        <Text style={[styles.value, isDark && styles.darkText]}>{value}</Text>
+        <Copy size={16} color={isDark ? '#94a3b8' : '#64748b'} />
+      </Pressable>
+    </View>
+  );
+
   return (
     <View style={[styles.container, isDark && styles.darkContainer]}>
       <View style={[styles.header, isDark && styles.darkHeader]}>
@@ -125,17 +141,14 @@ export default function DeviceDetailsScreen() {
 
         <View style={[styles.infoCard, isDark && styles.darkCard]}>
           <Text style={[styles.cardTitle, isDark && styles.darkText]}>Device Information</Text>
+          <CopyableField label="Device ID" value={device.id} isDark={isDark} />
+          <CopyableField label="IMEI" value={device.imei} isDark={isDark} />
+          {device.macAddress && (
+            <CopyableField label="MAC Address" value={device.macAddress} isDark={isDark} />
+          )}
           <View style={styles.infoRow}>
             <Text style={[styles.label, isDark && styles.darkLabel]}>Model:</Text>
             <Text style={[styles.value, isDark && styles.darkText]}>{device.model}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
-            <Text style={[styles.value, isDark && styles.darkText]}>{device.imei}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
-            <Text style={[styles.value, isDark && styles.darkText]}>{device.id}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={[styles.label, isDark && styles.darkLabel]}>Added:</Text>
@@ -197,12 +210,12 @@ export default function DeviceDetailsScreen() {
         )}
 
         {device.isStolen && (
-          <View style={styles.stolenWarning}>
-            <Shield size={24} color="#dc2626" />
-            <Text style={styles.stolenWarningText}>
-              This device has been reported as stolen. Contact the authorities if found.
-            </Text>
-          </View>
+          <Pressable
+            style={styles.foundButton}
+            onPress={handleMarkAsFound}>
+            <Shield size={20} color="#ffffff" />
+            <Text style={styles.foundButtonText}>Mark as Found</Text>
+          </Pressable>
         )}
       </ScrollView>
 
@@ -453,5 +466,25 @@ const styles = StyleSheet.create({
   },
   reportButtonDisabled: {
     backgroundColor: '#94a3b8',
+  },
+  foundButton: {
+    backgroundColor: '#2563eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    gap: 8,
+  },
+  foundButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  copyableValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });

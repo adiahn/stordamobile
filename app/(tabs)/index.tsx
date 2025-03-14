@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Modal, TextInput, Alert } from 'react-native';
 import { useState } from 'react';
 import { Plus, AlertTriangle, ArrowLeftRight, ChevronRight, X, Send } from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
 
 import { Link, useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/theme';

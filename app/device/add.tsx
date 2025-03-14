@@ -5,6 +5,7 @@ import { Smartphone, Camera, X, ArrowLeft, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Device from 'expo-device';
 import { useThemeStore } from '../../store/theme';
+import { Platform } from 'react-native';
 
 interface DeviceImage {
   uri: string;
@@ -30,14 +31,18 @@ export default function AddDeviceScreen() {
       setModel(deviceName);
     }
     
-    // Get actual device IMEI if possible
-    try {
-      // This is a placeholder - you'll need to implement actual IMEI detection
-      // using a native module or device API
-      const deviceImei = await Device.getIMEI();
-      setImei(deviceImei);
-    } catch (error) {
-      console.error('Failed to get IMEI:', error);
+    // Instead of trying to get IMEI directly, we'll use a different approach
+    // This is just a placeholder - you'll need to implement proper IMEI detection
+    // using platform-specific APIs
+    setImei('');
+  };
+
+  // Update MAC address helper based on platform
+  const getMacAddressHelper = () => {
+    if (Platform.OS === 'ios') {
+      return 'On iPhone: Go to Settings > General > About > Wi-Fi Address';
+    } else {
+      return 'On Android: Go to Settings > About Phone > Status > Wi-Fi MAC address';
     }
   };
 
@@ -143,7 +148,7 @@ export default function AddDeviceScreen() {
               placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
             />
             <Text style={[styles.helperText, isDark && styles.darkSubText]}>
-              Find your MAC address in device settings under About Phone > Status > Wi-Fi MAC address
+              {getMacAddressHelper()}
             </Text>
           </View>
 

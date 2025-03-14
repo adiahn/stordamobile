@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView } from 
 import { useState } from 'react';
 import { Search, AlertTriangle, BookmarkPlus, Bookmark } from 'lucide-react-native';
 import { useThemeStore } from '../../store/theme';
+import { Alert } from 'react-native';
 
 interface SearchResult {
   id: string;
@@ -25,21 +26,19 @@ export default function SearchScreen() {
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [isSearchSaved, setIsSearchSaved] = useState(false);
+  const [expandedDevice, setExpandedDevice] = useState<SearchResult | null>(null);
 
-  const handleSearch = () => {
-    // Simulated search result
-    if (searchQuery === 'dev_1' || searchQuery === '359269023456789') {
-      const result = {
-        id: 'dev_1',
-        imei: '359269023456789',
-        model: 'iPhone 13',
-        isStolen: false,
-        owner: 'John Doe',
-        addedAt: '2024-01-20',
-        image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=300&auto=format&fit=crop'
-      };
+  const handleSearch = async () => {
+    if (!searchQuery) return;
+
+    try {
+      // Here you would make an API call to search for the device
+      // For demo purposes, we'll simulate an API call
+      const result = await searchDeviceByIdOrImei(searchQuery);
       setSearchResult(result);
-      setIsSearchSaved(savedSearches.some(s => s.result.id === result.id));
+      setExpandedDevice(null);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to search for device');
     }
   };
 
@@ -60,6 +59,36 @@ export default function SearchScreen() {
     }
   };
 
+  const ExpandedDeviceView = ({ device, isDark }) => (
+    <View style={[styles.expandedCard, isDark && styles.darkCard]}>
+      <Text style={[styles.expandedTitle, isDark && styles.darkText]}>
+        Owner Information
+      </Text>
+      <View style={styles.ownerInfo}>
+        <Text style={[styles.label, isDark && styles.darkLabel]}>Owner:</Text>
+        <Text style={[styles.value, isDark && styles.darkText]}>
+          {device.originalOwner}
+        </Text>
+      </View>
+      {device.isStolen ? (
+        <View style={styles.contactInfo}>
+          <Text style={styles.contactTitle}>Contact Authorities</Text>
+          <Text style={styles.contactText}>
+            This device has been reported stolen. Please contact local authorities
+            if found.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.contactInfo}>
+          <Text style={styles.contactTitle}>Contact Owner</Text>
+          <Text style={styles.contactText}>
+            Please contact the owner through proper channels to verify ownership.
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <ScrollView style={[styles.container, isDark && styles.darkContainer]}>
       <View style={styles.searchBox}>
@@ -76,7 +105,10 @@ export default function SearchScreen() {
       </View>
 
       {searchResult && (
-        <View style={[styles.resultCard, isDark && styles.darkCard]}>
+        <Pressable 
+          style={[styles.resultCard, isDark && styles.darkCard]}
+          onPress={() => setExpandedDevice(searchResult)}
+        >
           <View style={styles.resultHeader}>
             <Text style={[styles.resultTitle, isDark && styles.darkText]}>Device Information</Text>
             <Pressable style={styles.saveButton} onPress={toggleSaveSearch}>
@@ -111,7 +143,10 @@ export default function SearchScreen() {
               </Text>
             </View>
           )}
-        </View>
+          {expandedDevice && (
+            <ExpandedDeviceView device={expandedDevice} isDark={isDark} />
+          )}
+        </Pressable>
       )}
 
       {savedSearches.length > 0 && (
@@ -314,5 +349,40 @@ const styles = StyleSheet.create({
   },
   darkSubText: {
     color: '#94a3b8',
+  },
+  expandedCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  expandedTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 16,
+  },
+  ownerInfo: {
+    marginBottom: 12,
+  },
+  contactInfo: {
+    marginBottom: 12,
+  },
+  contactTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  contactText: {
+    color: '#64748b',
   },
 });

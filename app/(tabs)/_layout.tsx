@@ -1,44 +1,45 @@
 import { Tabs } from 'expo-router';
 import { Smartphone, Search, CircleUser as UserCircle } from 'lucide-react-native';
+import { useThemeStore } from '../../store/theme';
+import { Platform } from 'react-native';
 
 export default function TabLayout() {
+  const { isDark } = useThemeStore();
+  
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
+        headerStyle: {
+          backgroundColor: isDark ? '#1e293b' : '#ffffff',
+        },
+        headerTintColor: isDark ? '#f1f5f9' : '#1e293b',
         tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopWidth: 1,
-          borderTopColor: '#e5e5e5',
+          backgroundColor: isDark ? '#1e293b' : '#ffffff',
+          borderTopColor: isDark ? '#475569' : '#e2e8f0',
         },
         tabBarActiveTintColor: '#0891b2',
-        tabBarInactiveTintColor: '#64748b',
+        tabBarInactiveTintColor: isDark ? '#94a3b8' : '#64748b',
+        headerSafeAreaInsets: { top: Platform.OS === 'ios' ? 44 : 0 },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'My Devices',
-          tabBarIcon: ({ size, color }) => (
-            <Smartphone size={size} color={color} />
-          ),
+          title: 'Devices',
+          tabBarIcon: ({ color }) => <Smartphone size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search Device',
-          tabBarIcon: ({ size, color }) => (
-            <Search size={size} color={color} />
-          ),
+          title: 'Search',
+          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ size, color }) => (
-            <UserCircle size={size} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <UserCircle size={24} color={color} />,
         }}
       />
     </Tabs>
