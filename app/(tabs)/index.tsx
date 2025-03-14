@@ -305,14 +305,8 @@ export default function DevicesScreen() {
       onPress={() => handleDevicePress(device)}>
       <View style={styles.deviceInfo}>
         <Text style={[styles.deviceModel, isDark && styles.darkText]}>{device.model}</Text>
-        <Text style={[styles.deviceImei, isDark && styles.darkSubText]}>ID: {device.id}</Text>
+        <Text style={[styles.deviceImei, isDark && styles.darkSubText]}>IMEI: {device.imei}</Text>
         <Text style={[styles.deviceDate, isDark && styles.darkSubText]}>Added: {device.addedAt}</Text>
-        <Text style={[styles.deviceDate, isDark && styles.darkSubText]}>
-          Status: {device.status}
-        </Text>
-        <Text style={[styles.deviceDate, isDark && styles.darkSubText]}>
-          Is Stolen: {device.isStolen ? 'Yes' : 'No'}
-        </Text>
       </View>
       {device.isStolen && (
         <View style={styles.stolenBadge}>

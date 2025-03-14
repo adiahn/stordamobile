@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView } from 'react-native';
 import { useState } from 'react';
-import { Search, AlertTriangle, BookmarkPlus, Bookmark } from 'lucide-react-native';
+import { Search, AlertTriangle, BookmarkPlus, Bookmark, ChevronUp, ChevronDown, Mail } from 'lucide-react-native';
 import { useThemeStore } from '../../store/theme';
 import { Alert } from 'react-native';
 import { Clipboard } from '@react-native-clipboard/clipboard';
@@ -10,9 +10,11 @@ interface SearchResult {
   imei: string;
   model: string;
   isStolen: boolean;
-  owner: string;
   addedAt: string;
-  image?: string;
+  status: string;
+  ownerName: string;
+  ownerContact: string;
+  lastSeen: string;
 }
 
 interface SavedSearch {
@@ -25,123 +27,43 @@ export default function SearchScreen() {
   const { isDark } = useThemeStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
-  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
-  const [isSearchSaved, setIsSearchSaved] = useState(false);
-  const [expandedDevice, setExpandedDevice] = useState<SearchResult | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     if (!searchQuery) return;
-
-    try {
-      // Here you would make an API call to search for the device
-      // For demo purposes, we'll simulate an API call
-      const result = await searchDeviceByIdOrImei(searchQuery);
-      setSearchResult(result);
-      setExpandedDevice(null);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to search for device');
-    }
+    
+    // This is a mock search - in a real app, you would call your API
+    const mockResult = {
+      id: 'DEV_123456',
+      imei: '359269023456789',
+      model: 'iPhone 13',
+      isStolen: true,
+      addedAt: '2024-01-20',
+      status: 'reported',
+      ownerName: 'Sarah Johnson',
+      ownerContact: 'sarah.j@example.com',
+      lastSeen: '2024-02-15',
+    };
+    
+    setSearchResult(mockResult);
+    setIsExpanded(false);
   };
 
-  const toggleSaveSearch = () => {
-    if (!searchResult) return;
-
-    if (isSearchSaved) {
-      setSavedSearches(savedSearches.filter(s => s.result.id !== searchResult.id));
-      setIsSearchSaved(false);
-    } else {
-      const newSavedSearch: SavedSearch = {
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        result: searchResult
-      };
-      setSavedSearches([newSavedSearch, ...savedSearches]);
-      setIsSearchSaved(true);
-    }
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
   };
-
-  const ExpandedDeviceView = ({ device, isDark }) => (
-    <View style={[styles.expandedCard, isDark && styles.darkCard]}>
-      <Text style={[styles.expandedTitle, isDark && styles.darkText]}>
-        Owner Information
-      </Text>
-      <View style={styles.ownerInfo}>
-        <Text style={[styles.label, isDark && styles.darkLabel]}>Owner:</Text>
-        <Text style={[styles.value, isDark && styles.darkText]}>
-          {device.originalOwner}
-        </Text>
-      </View>
-      {device.isStolen ? (
-        <View style={styles.contactInfo}>
-          <Text style={styles.contactTitle}>Contact Authorities</Text>
-          <Text style={styles.contactText}>
-            This device has been reported stolen. Please contact local authorities
-            if found.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.contactInfo}>
-          <Text style={styles.contactTitle}>Contact Owner</Text>
-          <Text style={styles.contactText}>
-            Please contact the owner through proper channels to verify ownership.
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-
-  const SearchResult = ({ device, isDark }) => (
-    <View style={[styles.resultCard, isDark && styles.darkCard]}>
-      <View style={styles.resultHeader}>
-        <Text style={[styles.resultTitle, isDark && styles.darkText]}>Device Information</Text>
-      </View>
-      <View style={styles.resultInfo}>
-        <View style={styles.infoRow}>
-          <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
-          <Pressable 
-            onPress={() => Clipboard.setString(device.id)}
-            style={styles.copyableField}
-          >
-            <Text style={[styles.value, isDark && styles.darkText]}>{device.id}</Text>
-            <Text style={[styles.copyText, isDark && styles.darkSubText]}>Copy</Text>
-          </Pressable>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={[styles.label, isDark && styles.darkLabel]}>Model:</Text>
-          <Text style={[styles.value, isDark && styles.darkText]}>{device.model}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
-          <Text style={[styles.value, isDark && styles.darkText]}>{device.imei}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={[styles.label, isDark && styles.darkLabel]}>Current Owner:</Text>
-          <Text style={[styles.value, isDark && styles.darkText]}>{device.owner}</Text>
-        </View>
-        {device.isStolen && (
-          <View style={styles.stolenWarning}>
-            <AlertTriangle size={20} color="#dc2626" />
-            <Text style={styles.stolenText}>
-              This device has been reported as stolen
-            </Text>
-          </View>
-        )}
-      </View>
-      {expandedDevice && (
-        <ExpandedDeviceView device={expandedDevice} isDark={isDark} />
-      )}
-    </View>
-  );
 
   return (
-    <ScrollView style={[styles.container, isDark && styles.darkContainer]}>
-      <View style={styles.searchBox}>
+    <View style={[styles.container, isDark && styles.darkContainer]}>
+      <View style={[styles.searchBar, isDark && styles.darkSearchBar]}>
         <TextInput
-          style={[styles.searchInput, isDark && styles.darkInput]}
-          placeholder="Enter Device ID or IMEI"
-          placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+          style={[styles.searchInput, isDark && styles.darkSearchInput]}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          placeholder="Search by IMEI or Device ID"
+          placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+          returnKeyType="search"
+          onSubmitEditing={handleSearch}
         />
         <Pressable style={styles.searchButton} onPress={handleSearch}>
           <Search size={20} color="#ffffff" />
@@ -149,37 +71,84 @@ export default function SearchScreen() {
       </View>
 
       {searchResult && (
-        <SearchResult device={searchResult} isDark={isDark} />
-      )}
-
-      {savedSearches.length > 0 && (
-        <View style={styles.savedSearchesSection}>
-          <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Saved Searches</Text>
-          {savedSearches.map((saved) => (
-            <View key={saved.id} style={[styles.savedSearchCard, isDark && styles.darkCard]}>
-              <View style={styles.savedSearchHeader}>
-                <Text style={[styles.savedSearchDate, isDark && styles.darkSubText]}>
-                  {new Date(saved.date).toLocaleDateString()}
-                </Text>
-                <Bookmark size={16} color={isDark ? '#0891b2' : '#0891b2'} />
+        <View style={[styles.resultCard, isDark && styles.darkCard]}>
+          <View style={styles.resultHeader}>
+            <Text style={[styles.resultTitle, isDark && styles.darkText]}>
+              {searchResult.model}
+            </Text>
+            {searchResult.isStolen && (
+              <View style={styles.stolenBadge}>
+                <AlertTriangle size={16} color="#dc2626" />
+                <Text style={styles.stolenText}>Stolen</Text>
               </View>
-              <Text style={[styles.savedSearchModel, isDark && styles.darkText]}>
-                {saved.result.model}
+            )}
+          </View>
+          
+          <View style={styles.resultInfo}>
+            <View style={styles.infoRow}>
+              <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
+              <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.id}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
+              <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.imei}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={[styles.label, isDark && styles.darkLabel]}>Status:</Text>
+              <Text style={[styles.value, isDark && styles.darkText]}>
+                {searchResult.isStolen ? 'Reported Stolen' : searchResult.status}
               </Text>
-              <Text style={[styles.savedSearchId, isDark && styles.darkSubText]}>
-                ID: {saved.result.id}
+            </View>
+          </View>
+          
+          <Pressable style={styles.expandButton} onPress={toggleExpand}>
+            <Text style={styles.expandButtonText}>
+              {isExpanded ? 'Show Less' : 'Show More Details'}
+            </Text>
+            {isExpanded ? (
+              <ChevronUp size={16} color="#0891b2" />
+            ) : (
+              <ChevronDown size={16} color="#0891b2" />
+            )}
+          </Pressable>
+          
+          {isExpanded && (
+            <View style={styles.expandedContent}>
+              <Text style={[styles.expandedTitle, isDark && styles.darkText]}>
+                Owner Information
               </Text>
-              {saved.result.isStolen && (
-                <View style={styles.miniStolenWarning}>
-                  <AlertTriangle size={16} color="#dc2626" />
-                  <Text style={styles.miniStolenText}>Reported Stolen</Text>
+              <View style={styles.infoRow}>
+                <Text style={[styles.label, isDark && styles.darkLabel]}>Owner:</Text>
+                <Text style={[styles.value, isDark && styles.darkText]}>
+                  {searchResult.ownerName}
+                </Text>
+              </View>
+              {searchResult.isStolen && (
+                <View style={styles.contactSection}>
+                  <Text style={[styles.contactTitle, isDark && styles.darkText]}>
+                    This device has been reported stolen
+                  </Text>
+                  <Text style={[styles.contactInfo, isDark && styles.darkSubText]}>
+                    If you have found this device, please contact the owner at {searchResult.ownerContact} 
+                    or report to local authorities.
+                  </Text>
+                  <Pressable style={styles.contactButton}>
+                    <Mail size={16} color="#ffffff" />
+                    <Text style={styles.contactButtonText}>Contact Owner</Text>
+                  </Pressable>
                 </View>
               )}
+              <View style={styles.infoRow}>
+                <Text style={[styles.label, isDark && styles.darkLabel]}>Last Seen:</Text>
+                <Text style={[styles.value, isDark && styles.darkText]}>
+                  {searchResult.lastSeen}
+                </Text>
+              </View>
             </View>
-          ))}
+          )}
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -191,7 +160,7 @@ const styles = StyleSheet.create({
   darkContainer: {
     backgroundColor: '#1e293b',
   },
-  searchBox: {
+  searchBar: {
     flexDirection: 'row',
     gap: 8,
     margin: 16,
@@ -212,7 +181,10 @@ const styles = StyleSheet.create({
     elevation: 2,
     color: '#1e293b',
   },
-  darkInput: {
+  darkSearchBar: {
+    backgroundColor: '#334155',
+  },
+  darkSearchInput: {
     backgroundColor: '#334155',
     color: '#f1f5f9',
   },
@@ -273,15 +245,7 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     fontWeight: '500',
   },
-  copyableField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  copyText: {
-    color: '#64748b',
-    marginLeft: 4,
-  },
-  stolenWarning: {
+  stolenBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fee2e2',
@@ -296,105 +260,91 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  savedSearchesSection: {
-    padding: 16,
-    paddingTop: 0,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 12,
-  },
-  savedSearchCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  savedSearchHeader: {
+  expandButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
   },
-  savedSearchDate: {
-    fontSize: 12,
-    color: '#64748b',
+  expandButtonText: {
+    color: '#0891b2',
+    fontSize: 14,
+    fontWeight: '500',
   },
-  savedSearchModel: {
+  expandedContent: {
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    paddingTop: 16,
+    gap: 12,
+  },
+  expandedTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 2,
+    marginBottom: 8,
   },
-  savedSearchId: {
+  contactSection: {
+    backgroundColor: '#f1f5f9',
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 12,
+  },
+  contactTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  contactInfo: {
     fontSize: 14,
     color: '#64748b',
+    marginBottom: 12,
   },
-  miniStolenWarning: {
+  contactButton: {
+    backgroundColor: '#0891b2',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginTop: 8,
-    gap: 4,
-    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
   },
-  miniStolenText: {
-    color: '#dc2626',
-    fontSize: 12,
+  contactButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: '500',
+  },
+  recoverButton: {
+    backgroundColor: '#059669',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    gap: 8,
+  },
+  recoverButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  recoverConfirmButton: {
+    backgroundColor: '#059669',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 20,
+    gap: 8,
+  },
+  buttonDisabled: {
+    backgroundColor: '#94a3b8',
   },
   darkText: {
     color: '#f1f5f9',
   },
   darkSubText: {
     color: '#94a3b8',
-  },
-  expandedCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    margin: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  expandedTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 16,
-  },
-  ownerInfo: {
-    marginBottom: 12,
-  },
-  contactInfo: {
-    marginBottom: 12,
-  },
-  contactTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  contactText: {
-    color: '#64748b',
   },
 });

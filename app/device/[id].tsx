@@ -61,6 +61,11 @@ export default function DeviceDetailsScreen() {
   const [userPin, setUserPin] = useState('');
   const [reportError, setReportError] = useState<string | null>(null);
 
+  // Add state for recovery modal
+  const [isRecoveryModalVisible, setIsRecoveryModalVisible] = useState(false);
+  const [recoveryPin, setRecoveryPin] = useState('');
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+
   const handleReportStolen = () => {
     setIsReportModalVisible(true);
   };
@@ -97,6 +102,37 @@ export default function DeviceDetailsScreen() {
     } catch (error) {
       setReportError('Failed to report device. Please try again.');
     }
+  };
+
+  const handleRecoverDevice = () => {
+    setIsRecoveryModalVisible(true);
+  };
+
+  const handleRecoveryConfirm = () => {
+    if (!recoveryPin) {
+      setRecoveryError('Please enter your PIN');
+      return;
+    }
+
+    if (recoveryPin.length !== 6) {
+      setRecoveryError('Invalid PIN');
+      return;
+    }
+
+    // Here you would make an API call to mark the device as recovered
+    Alert.alert(
+      'Device Recovered',
+      'This device has been marked as recovered.',
+      [
+        {
+          text: 'OK',
+          onPress: () => {
+            setIsRecoveryModalVisible(false);
+            router.back();
+          }
+        }
+      ]
+    );
   };
 
   // Add copyable fields
@@ -194,7 +230,7 @@ export default function DeviceDetailsScreen() {
           ))}
         </View>
 
-        {device.status === 'owned' && !device.isStolen && (
+        {!device.isStolen && device.status === 'owned' && (
           <Pressable
             style={styles.reportButton}
             onPress={handleReportStolen}>
@@ -205,10 +241,10 @@ export default function DeviceDetailsScreen() {
 
         {device.isStolen && (
           <Pressable
-            style={styles.foundButton}
-            onPress={handleMarkAsFound}>
+            style={styles.recoverButton}
+            onPress={handleRecoverDevice}>
             <Shield size={20} color="#ffffff" />
-            <Text style={styles.foundButtonText}>Mark as Found</Text>
+            <Text style={styles.recoverButtonText}>Mark as Recovered</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -259,6 +295,59 @@ export default function DeviceDetailsScreen() {
                 disabled={!userPin}>
                 <AlertTriangle size={20} color="#ffffff" />
                 <Text style={styles.reportButtonText}>Confirm Report</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      );
+
+      // Add recovery modal
+      const recoveryModal = (
+        <Modal
+          visible={isRecoveryModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setIsRecoveryModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, isDark && styles.darkModalContent]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, isDark && styles.darkText]}>Recover Device</Text>
+                <Pressable
+                  onPress={() => setIsRecoveryModalVisible(false)}
+                  style={styles.closeButton}>
+                  <X size={24} color={isDark ? '#f1f5f9' : '#1e293b'} />
+                </Pressable>
+              </View>
+
+              <Text style={[styles.modalText, isDark && styles.darkText]}>
+                Please enter your PIN to confirm recovering this device.
+              </Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, isDark && styles.darkText]}>PIN</Text>
+                <TextInput
+                  style={[styles.input, isDark && styles.darkInput]}
+                  value={recoveryPin}
+                  onChangeText={setRecoveryPin}
+                  placeholder="Enter your 6-digit PIN"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+                  secureTextEntry
+                  keyboardType="numeric"
+                  maxLength={6}
+                  returnKeyType="done"
+                />
+              </View>
+
+              {recoveryError && (
+                <Text style={styles.errorText}>{recoveryError}</Text>
+              )}
+
+              <Pressable
+                style={[styles.recoverConfirmButton, !recoveryPin && styles.buttonDisabled]}
+                onPress={handleRecoveryConfirm}
+                disabled={!recoveryPin}>
+                <Shield size={20} color="#ffffff" />
+                <Text style={styles.buttonText}>Confirm Recovery</Text>
               </Pressable>
             </View>
           </View>
@@ -461,7 +550,7 @@ const styles = StyleSheet.create({
   reportButtonDisabled: {
     backgroundColor: '#94a3b8',
   },
-  foundButton: {
+  recoverButton: {
     backgroundColor: '#2563eb',
     flexDirection: 'row',
     alignItems: 'center',
@@ -471,7 +560,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 8,
   },
-  foundButtonText: {
+  recoverButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
@@ -480,5 +569,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  recoverConfirmButton: {
+    backgroundColor: '#2563eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  buttonDisabled: {
+    backgroundColor: '#94a3b8',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
