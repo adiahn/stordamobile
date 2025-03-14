@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { Smartphone, Camera, X, ArrowLeft, Plus } from 'lucide-react-native';
@@ -30,14 +30,15 @@ export default function AddDeviceScreen() {
       setModel(deviceName);
     }
     
-    // Simulate getting device info
-    const randomImei = Math.floor(Math.random() * 900000000000000 + 100000000000000).toString();
-    const randomMac = Array.from({ length: 6 }, () => 
-      Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
-    ).join(':').toUpperCase();
-    
-    setImei(randomImei);
-    setMacAddress(randomMac);
+    // Get actual device IMEI if possible
+    try {
+      // This is a placeholder - you'll need to implement actual IMEI detection
+      // using a native module or device API
+      const deviceImei = await Device.getIMEI();
+      setImei(deviceImei);
+    } catch (error) {
+      console.error('Failed to get IMEI:', error);
+    }
   };
 
   const handleAddDevice = () => {
@@ -54,6 +55,14 @@ export default function AddDeviceScreen() {
       isStolen: false,
       status: 'owned',
     };
+
+    if (!macAddress) {
+      Alert.alert(
+        'Warning',
+        'Adding a MAC address is highly recommended for device security and recovery purposes. You can add it later in device settings.',
+        [{ text: 'OK' }]
+      );
+    }
 
     // Here you would typically save the device to your backend
     console.log('New device:', newDevice);
@@ -130,9 +139,12 @@ export default function AddDeviceScreen() {
               style={[styles.input, isDark && styles.darkInput]}
               value={macAddress}
               onChangeText={setMacAddress}
-              placeholder="Enter MAC address"
+              placeholder="Enter MAC address (XX:XX:XX:XX:XX:XX)"
               placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
             />
+            <Text style={[styles.helperText, isDark && styles.darkSubText]}>
+              Find your MAC address in device settings under About Phone > Status > Wi-Fi MAC address
+            </Text>
           </View>
 
           <View style={styles.inputGroup}>
@@ -293,5 +305,10 @@ const styles = StyleSheet.create({
   },
   darkSubText: {
     color: '#94a3b8',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
   },
 });

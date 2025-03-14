@@ -136,6 +136,7 @@ export default function DevicesScreen() {
   });
   const [transferError, setTransferError] = useState<string | null>(null);
   const [isSelectDeviceModalVisible, setIsSelectDeviceModalVisible] = useState(false);
+  const [isUsernameVerified, setIsUsernameVerified] = useState(false);
 
   const devicesByStatus = devices.reduce((acc, device) => {
     if (!acc[device.status]) {
@@ -156,7 +157,30 @@ export default function DevicesScreen() {
     setSelectedDevice(device);
     setTransferDetails({ recipientUsername: '', transferPin: '' });
     setTransferError(null);
+    setIsUsernameVerified(false);
     setIsTransferModalVisible(true);
+  };
+
+  const handleVerifyUsername = async () => {
+    if (!transferDetails.recipientUsername) {
+      setTransferError('Please enter a username');
+      return;
+    }
+
+    try {
+      // Here you would verify the username with your backend
+      // For demo purposes, we'll just simulate an API call
+      const isValid = true; // Replace with actual API call
+      
+      if (isValid) {
+        setIsUsernameVerified(true);
+        setTransferError(null);
+      } else {
+        setTransferError('Username not found');
+      }
+    } catch (error) {
+      setTransferError('Failed to verify username');
+    }
   };
 
   const handleTransferSubmit = () => {
@@ -301,14 +325,6 @@ export default function DevicesScreen() {
           <Text style={styles.transferredText}>Transferred</Text>
         </View>
       )}
-      {device.status === 'owned' && !device.isStolen && (
-        <Pressable
-          style={styles.transferButton}
-          onPress={() => handleTransferPress(device)}>
-          <Send size={18} color="#0891b2" />
-          <Text style={styles.transferButtonText}>Transfer</Text>
-        </Pressable>
-      )}
       <ChevronRight size={20} color={isDark ? '#94a3b8' : '#64748b'} style={styles.chevron} />
     </Pressable>
   );
@@ -348,46 +364,53 @@ export default function DevicesScreen() {
             </View>
           )}
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, isDark && styles.darkText]}>Recipient Username</Text>
-            <TextInput
-              style={[styles.input, isDark && styles.darkInput]}
-              value={transferDetails.recipientUsername}
-              onChangeText={(text) => setTransferDetails(prev => ({ ...prev, recipientUsername: text }))}
-              placeholder="Enter username"
-              placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, isDark && styles.darkText]}>Transfer PIN</Text>
-            <TextInput
-              style={[styles.input, isDark && styles.darkInput]}
-              value={transferDetails.transferPin}
-              onChangeText={(text) => setTransferDetails(prev => ({ ...prev, transferPin: text }))}
-              placeholder="Enter 6-digit PIN"
-              placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
-              secureTextEntry
-              keyboardType="numeric"
-              maxLength={6}
-            />
-          </View>
+          {!isUsernameVerified ? (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, isDark && styles.darkText]}>Recipient Username</Text>
+                <TextInput
+                  style={[styles.input, isDark && styles.darkInput]}
+                  value={transferDetails.recipientUsername}
+                  onChangeText={(text) => setTransferDetails(prev => ({ ...prev, recipientUsername: text }))}
+                  placeholder="Enter username"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+                />
+              </View>
+              <Pressable
+                style={[styles.verifyButton, !transferDetails.recipientUsername && styles.verifyButtonDisabled]}
+                onPress={handleVerifyUsername}
+                disabled={!transferDetails.recipientUsername}>
+                <Text style={styles.verifyButtonText}>Verify Username</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, isDark && styles.darkText]}>Transfer PIN</Text>
+                <TextInput
+                  style={[styles.input, isDark && styles.darkInput]}
+                  value={transferDetails.transferPin}
+                  onChangeText={(text) => setTransferDetails(prev => ({ ...prev, transferPin: text }))}
+                  placeholder="Enter 6-digit PIN"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+                  secureTextEntry
+                  keyboardType="numeric"
+                  maxLength={6}
+                />
+              </View>
+              <Pressable
+                style={[styles.transferSubmitButton, !transferDetails.transferPin && styles.transferSubmitButtonDisabled]}
+                onPress={handleTransferSubmit}
+                disabled={!transferDetails.transferPin}>
+                <Send size={20} color="#ffffff" />
+                <Text style={styles.transferSubmitButtonText}>Initiate Transfer</Text>
+              </Pressable>
+            </>
+          )}
 
           {transferError && (
             <Text style={styles.errorText}>{transferError}</Text>
           )}
-
-          <Pressable
-            style={[
-              styles.transferSubmitButton,
-              (!transferDetails.recipientUsername || !transferDetails.transferPin) && 
-              styles.transferSubmitButtonDisabled
-            ]}
-            onPress={handleTransferSubmit}
-            disabled={!transferDetails.recipientUsername || !transferDetails.transferPin}>
-            <Send size={20} color="#ffffff" />
-            <Text style={styles.transferSubmitButtonText}>Initiate Transfer</Text>
-          </Pressable>
         </View>
       </View>
     </Modal>
@@ -727,6 +750,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#94a3b8',
   },
   transferSubmitButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  verifyButton: {
+    backgroundColor: '#0891b2',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  verifyButtonDisabled: {
+    backgroundColor: '#94a3b8',
+  },
+  verifyButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',

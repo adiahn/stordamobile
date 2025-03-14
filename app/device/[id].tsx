@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Modal, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertTriangle, ArrowLeft, Shield } from 'lucide-react-native';
+import { AlertTriangle, ArrowLeft, Shield, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { useThemeStore } from '../../store/theme';
 
@@ -54,10 +54,47 @@ export default function DeviceDetailsScreen() {
     ]
   });
 
+  // Add state for PIN modal
+  const [isReportModalVisible, setIsReportModalVisible] = useState(false);
+  const [userPin, setUserPin] = useState('');
+  const [reportError, setReportError] = useState<string | null>(null);
+
   const handleReportStolen = () => {
-    // Here you would typically make an API call to report the device as stolen
-    // For demo purposes, we'll just navigate back
-    router.back();
+    setIsReportModalVisible(true);
+  };
+
+  const handleReportConfirm = async () => {
+    if (!userPin) {
+      setReportError('Please enter your PIN');
+      return;
+    }
+
+    try {
+      // Here you would verify the PIN with your backend
+      // For demo purposes, we'll just check if it's 6 digits
+      if (userPin.length !== 6) {
+        setReportError('Invalid PIN');
+        return;
+      }
+
+      // Update device status
+      // Here you would make an API call to your backend
+      Alert.alert(
+        'Device Reported',
+        'This device has been reported as stolen. The authorities will be notified.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setIsReportModalVisible(false);
+              router.back();
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      setReportError('Failed to report device. Please try again.');
+    }
   };
 
   return (
@@ -168,6 +205,58 @@ export default function DeviceDetailsScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Add to the render section: */}
+      const reportStolenModal = (
+        <Modal
+          visible={isReportModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setIsReportModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, isDark && styles.darkModalContent]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, isDark && styles.darkText]}>Report Device as Stolen</Text>
+                <Pressable
+                  onPress={() => setIsReportModalVisible(false)}
+                  style={styles.closeButton}>
+                  <X size={24} color={isDark ? '#f1f5f9' : '#1e293b'} />
+                </Pressable>
+              </View>
+
+              <Text style={[styles.modalText, isDark && styles.darkText]}>
+                Please enter your PIN to confirm reporting this device as stolen.
+              </Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, isDark && styles.darkText]}>PIN</Text>
+                <TextInput
+                  style={[styles.input, isDark && styles.darkInput]}
+                  value={userPin}
+                  onChangeText={setUserPin}
+                  placeholder="Enter your 6-digit PIN"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+                  secureTextEntry
+                  keyboardType="numeric"
+                  maxLength={6}
+                />
+              </View>
+
+              {reportError && (
+                <Text style={styles.errorText}>{reportError}</Text>
+              )}
+
+              <Pressable
+                style={[styles.reportButton, !userPin && styles.reportButtonDisabled]}
+                onPress={handleReportConfirm}
+                disabled={!userPin}>
+                <AlertTriangle size={20} color="#ffffff" />
+                <Text style={styles.reportButtonText}>Confirm Report</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      );
     </View>
   );
 }
@@ -311,5 +400,58 @@ const styles = StyleSheet.create({
   },
   darkLabel: {
     color: '#94a3b8',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    padding: 24,
+    borderRadius: 12,
+    width: '80%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#1e293b',
+    marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  input: {
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  darkInput: {
+    backgroundColor: '#334155',
+    borderColor: '#475569',
+  },
+  errorText: {
+    color: '#dc2626',
+    marginBottom: 16,
+  },
+  reportButtonDisabled: {
+    backgroundColor: '#94a3b8',
   },
 });
