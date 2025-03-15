@@ -1,30 +1,19 @@
-import { View, Text, StyleSheet, TextInput, Pressable, Image, ScrollView } from 'react-native';
-import { useState } from 'react';
-import { Search, AlertTriangle, BookmarkPlus, Bookmark, ChevronUp, ChevronDown, Mail, ChevronRight } from 'lucide-react-native';
-import { useThemeStore } from '../../store/theme';
-import { Alert } from 'react-native';
-import { Clipboard } from '@react-native-clipboard/clipboard';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
 interface SearchResult {
   id: string;
   imei: string;
   model: string;
   isStolen: boolean;
-  addedAt: string;
   status: string;
   ownerName: string;
   ownerContact: string;
   lastSeen: string;
 }
 
-interface SavedSearch {
-  id: string;
-  date: string;
-  result: SearchResult;
-}
-
 export default function SearchScreen() {
-  const { isDark } = useThemeStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -34,7 +23,6 @@ export default function SearchScreen() {
     if (!searchQuery) return;
     
     // This is a mock search - in a real app, you would call your API
-    // For demo purposes, let's check if the search query contains "stolen"
     const isDeviceStolen = searchQuery.toLowerCase().includes("stolen");
     
     const mockResult = {
@@ -42,7 +30,6 @@ export default function SearchScreen() {
       imei: searchQuery, // Use the search query as IMEI for demo
       model: 'iPhone 13',
       isStolen: isDeviceStolen,
-      addedAt: '2024-01-20',
       status: isDeviceStolen ? 'reported' : 'owned',
       ownerName: 'Sarah Johnson',
       ownerContact: 'sarah.j@example.com',
@@ -72,32 +59,40 @@ export default function SearchScreen() {
   };
 
   return (
-    <View style={[styles.container, isDark && styles.darkContainer]}>
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.searchBar, isDark && styles.darkSearchBar]}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Search Devices</Text>
+          <Text style={styles.subtitle}>
+            Find devices by IMEI or Device ID
+          </Text>
+        </View>
+        
+        <View style={styles.searchBar}>
+          <Feather name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
           <TextInput
-            style={[styles.searchInput, isDark && styles.darkSearchInput]}
+            style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search by IMEI or Device ID"
-            placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+            placeholder="Enter IMEI or Device ID"
+            placeholderTextColor="#94a3b8"
             returnKeyType="search"
             onSubmitEditing={handleSearch}
           />
           <Pressable style={styles.searchButton} onPress={handleSearch}>
-            <Search size={20} color="#ffffff" />
+            <Text style={styles.searchButtonText}>Search</Text>
           </Pressable>
         </View>
 
         {searchResult && (
-          <View style={[styles.resultCard, isDark && styles.darkCard]}>
+          <View style={styles.resultCard}>
             <View style={styles.resultHeader}>
-              <Text style={[styles.resultTitle, isDark && styles.darkText]}>
+              <Text style={styles.resultTitle}>
                 {searchResult.model}
               </Text>
               {searchResult.isStolen && (
                 <View style={styles.stolenBadge}>
-                  <AlertTriangle size={16} color="#dc2626" />
+                  <Feather name="alert-triangle" size={14} color="#dc2626" />
                   <Text style={styles.stolenText}>Stolen</Text>
                 </View>
               )}
@@ -105,127 +100,113 @@ export default function SearchScreen() {
             
             <View style={styles.resultInfo}>
               <View style={styles.infoRow}>
-                <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
-                <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.id}</Text>
+                <Text style={styles.label}>Device ID:</Text>
+                <Text style={styles.value}>{searchResult.id}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
-                <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.imei}</Text>
+                <Text style={styles.label}>IMEI:</Text>
+                <Text style={styles.value}>{searchResult.imei}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={[styles.label, isDark && styles.darkLabel]}>Status:</Text>
-                <Text style={[styles.value, isDark && styles.darkText]}>
+                <Text style={styles.label}>Status:</Text>
+                <Text style={styles.value}>
                   {searchResult.isStolen ? 'Reported Stolen' : searchResult.status}
                 </Text>
               </View>
             </View>
             
             <View style={styles.resultActions}>
+              <Pressable style={styles.actionButton} onPress={toggleExpand}>
+                <Text style={styles.actionButtonText}>
+                  {isExpanded ? 'Show Less' : 'Show More Details'}
+                </Text>
+                <Feather 
+                  name={isExpanded ? "chevron-up" : "chevron-down"} 
+                  size={16} 
+                  color="#6366f1" 
+                />
+              </Pressable>
+              
               <Pressable style={styles.saveButton} onPress={saveSearchResult}>
-                <Bookmark size={16} color="#ffffff" />
-                <Text style={styles.saveButtonText}>Save Search</Text>
+                <Feather name="bookmark" size={16} color="#ffffff" />
+                <Text style={styles.saveButtonText}>Save</Text>
               </Pressable>
             </View>
             
-            <Pressable style={styles.expandButton} onPress={toggleExpand}>
-              <Text style={styles.expandButtonText}>
-                {isExpanded ? 'Show Less' : 'Show More Details'}
-              </Text>
-              {isExpanded ? (
-                <ChevronUp size={16} color="#0891b2" />
-              ) : (
-                <ChevronDown size={16} color="#0891b2" />
-              )}
-            </Pressable>
-            
             {isExpanded && (
               <View style={styles.expandedContent}>
-                <Text style={[styles.expandedTitle, isDark && styles.darkText]}>
+                <Text style={styles.expandedTitle}>
                   Device Details
                 </Text>
                 <View style={styles.infoRow}>
-                  <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
-                  <Text style={[styles.value, isDark && styles.darkText]}>
-                    {searchResult.id}
-                  </Text>
+                  <Text style={styles.label}>Device ID:</Text>
+                  <Text style={styles.value}>{searchResult.id}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
-                  <Text style={[styles.value, isDark && styles.darkText]}>
-                    {searchResult.imei}
-                  </Text>
+                  <Text style={styles.label}>IMEI:</Text>
+                  <Text style={styles.value}>{searchResult.imei}</Text>
                 </View>
                 <View style={styles.infoRow}>
-                  <Text style={[styles.label, isDark && styles.darkLabel]}>Model:</Text>
-                  <Text style={[styles.value, isDark && styles.darkText]}>
-                    {searchResult.model}
-                  </Text>
+                  <Text style={styles.label}>Model:</Text>
+                  <Text style={styles.value}>{searchResult.model}</Text>
                 </View>
                 
-                <Text style={[styles.expandedTitle, isDark && styles.darkText, styles.ownerSectionTitle]}>
+                <Text style={[styles.expandedTitle, styles.ownerSectionTitle]}>
                   Owner Information
                 </Text>
                 <View style={styles.infoRow}>
-                  <Text style={[styles.label, isDark && styles.darkLabel]}>Owner:</Text>
-                  <Text style={[styles.value, isDark && styles.darkText]}>
-                    {searchResult.ownerName}
-                  </Text>
+                  <Text style={styles.label}>Owner:</Text>
+                  <Text style={styles.value}>{searchResult.ownerName}</Text>
                 </View>
                 {searchResult.isStolen && (
                   <View style={styles.contactSection}>
-                    <Text style={[styles.contactTitle, isDark && styles.darkText]}>
+                    <Text style={styles.contactTitle}>
                       This device has been reported stolen
                     </Text>
-                    <Text style={[styles.contactInfo, isDark && styles.darkSubText]}>
+                    <Text style={styles.contactInfo}>
                       If you have found this device, please contact the owner at {searchResult.ownerContact} 
                       or report to local authorities.
                     </Text>
                     <Pressable style={styles.contactButton}>
-                      <Mail size={16} color="#ffffff" />
+                      <Feather name="mail" size={16} color="#ffffff" />
                       <Text style={styles.contactButtonText}>Contact Owner</Text>
                     </Pressable>
                   </View>
                 )}
                 <View style={styles.infoRow}>
-                  <Text style={[styles.label, isDark && styles.darkLabel]}>Last Seen:</Text>
-                  <Text style={[styles.value, isDark && styles.darkText]}>
-                    {searchResult.lastSeen}
-                  </Text>
+                  <Text style={styles.label}>Last Seen:</Text>
+                  <Text style={styles.value}>{searchResult.lastSeen}</Text>
                 </View>
               </View>
             )}
           </View>
         )}
 
-        <View style={styles.savedSearchesSection}>
-          <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Saved Searches</Text>
-          {savedSearches.length === 0 ? (
-            <Text style={[styles.emptyText, isDark && styles.darkSubText]}>
-              No saved searches yet
-            </Text>
-          ) : (
-            savedSearches.map(saved => (
+        {savedSearches.length > 0 && (
+          <View style={styles.savedSearchesSection}>
+            <Text style={styles.sectionTitle}>Saved Searches</Text>
+            {savedSearches.map((saved, index) => (
               <Pressable 
-                key={saved.id}
-                style={[styles.savedSearchItem, isDark && styles.darkCard]}
+                key={`${saved.id}_${index}`}
+                style={styles.savedSearchItem}
                 onPress={() => {
                   setSearchQuery(saved.imei);
                   setSearchResult(saved);
                 }}
               >
                 <View>
-                  <Text style={[styles.savedSearchTitle, isDark && styles.darkText]}>
+                  <Text style={styles.savedSearchTitle}>
                     {saved.model}
                   </Text>
-                  <Text style={[styles.savedSearchSubtitle, isDark && styles.darkSubText]}>
+                  <Text style={styles.savedSearchSubtitle}>
                     IMEI: {saved.imei}
                   </Text>
                 </View>
-                <ChevronRight size={16} color={isDark ? '#94a3b8' : '#64748b'} />
+                <Feather name="chevron-right" size={16} color="#94a3b8" />
               </Pressable>
-            ))
-          )}
-        </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -236,96 +217,75 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  darkContainer: {
-    backgroundColor: '#1e293b',
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#64748b',
   },
   searchBar: {
     flexDirection: 'row',
-    gap: 8,
-    margin: 16,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  searchIcon: {
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 12,
+    height: 50,
     fontSize: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    color: '#1e293b',
-  },
-  darkSearchBar: {
-    backgroundColor: '#334155',
-  },
-  darkSearchInput: {
-    backgroundColor: '#334155',
-    color: '#f1f5f9',
+    color: '#334155',
   },
   searchButton: {
-    backgroundColor: '#0891b2',
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 8,
-    padding: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  searchButtonText: {
+    color: '#ffffff',
+    fontWeight: '500',
   },
   resultCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
-    marginTop: 16,
-    marginHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  darkCard: {
-    backgroundColor: '#334155',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   resultHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   resultTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#1e293b',
-  },
-  resultInfo: {
-    gap: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  label: {
-    width: 120,
-    fontSize: 16,
-    color: '#64748b',
-  },
-  darkLabel: {
-    color: '#94a3b8',
-  },
-  value: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1e293b',
-    fontWeight: '500',
+    color: '#334155',
   },
   stolenBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    backgroundColor: '#fee2e2',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -337,15 +297,55 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 4,
   },
-  expandButton: {
+  resultInfo: {
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  label: {
+    fontSize: 14,
+    color: '#64748b',
+    flex: 1,
+  },
+  value: {
+    fontSize: 14,
+    color: '#334155',
+    fontWeight: '500',
+    flex: 2,
+    textAlign: 'right',
+  },
+  resultActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 8,
+    padding: 8,
+    gap: 4,
   },
-  expandButtonText: {
-    color: '#0891b2',
+  actionButtonText: {
+    color: '#6366f1',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  saveButtonText: {
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -353,12 +353,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
     paddingTop: 16,
-    marginTop: 8,
+    marginTop: 16,
   },
   expandedTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    color: '#334155',
+    marginBottom: 12,
+  },
+  ownerSectionTitle: {
+    marginTop: 24,
   },
   contactSection: {
     backgroundColor: '#f1f5f9',
@@ -369,19 +373,21 @@ const styles = StyleSheet.create({
   contactTitle: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#334155',
     marginBottom: 8,
   },
   contactInfo: {
     fontSize: 14,
     color: '#64748b',
     marginBottom: 12,
+    lineHeight: 20,
   },
   contactButton: {
-    backgroundColor: '#0891b2',
+    backgroundColor: '#6366f1',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
+    padding: 10,
     borderRadius: 8,
     gap: 8,
   },
@@ -390,93 +396,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  recoverButton: {
-    backgroundColor: '#059669',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 24,
-    gap: 8,
-  },
-  recoverButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  recoverConfirmButton: {
-    backgroundColor: '#059669',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 20,
-    gap: 8,
-  },
-  buttonDisabled: {
-    backgroundColor: '#94a3b8',
-  },
-  darkText: {
-    color: '#f1f5f9',
-  },
-  darkSubText: {
-    color: '#94a3b8',
-  },
-  resultActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  saveButton: {
-    backgroundColor: '#0891b2',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  saveButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
   savedSearchesSection: {
-    marginTop: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    color: '#334155',
     marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
   },
   savedSearchItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: '#f1f5f9',
   },
   savedSearchTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#334155',
   },
   savedSearchSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#64748b',
-  },
-  ownerSectionTitle: {
-    marginTop: 16,
-  },
-  scrollContent: {
-    paddingBottom: 24,
+    marginTop: 4,
   },
 });

@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Alert, Image } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { useThemeStore } from '../../store/theme';
-import { Mail, Lock, LogIn } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 
 export default function LoginScreen() {
-  const { isDark } = useThemeStore();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,26 +32,36 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleLogin = () => {
+    setIsLoading(true);
+    
+    // Simulate Google authentication
+    setTimeout(() => {
+      router.replace('/(tabs)');
+      setIsLoading(false);
+    }, 1000);
+  };
+
   return (
-    <View style={[styles.container, isDark && styles.darkContainer]}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, isDark && styles.darkText]}>Welcome Back</Text>
-        <Text style={[styles.subtitle, isDark && styles.darkSubText]}>
-          Sign in to continue managing your devices
+        <Text style={styles.logo}>Storda</Text>
+        <Text style={styles.subtitle}>
+          Secure your devices with confidence
         </Text>
       </View>
 
       <View style={styles.form}>
         <View style={styles.inputGroup}>
           <View style={styles.inputIcon}>
-            <Mail size={20} color={isDark ? '#94a3b8' : '#64748b'} />
+            <Feather name="mail" size={20} color="#94a3b8" />
           </View>
           <TextInput
-            style={[styles.input, isDark && styles.darkInput]}
+            style={styles.input}
             value={email}
             onChangeText={setEmail}
             placeholder="Email"
-            placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+            placeholderTextColor="#94a3b8"
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -61,14 +69,14 @@ export default function LoginScreen() {
 
         <View style={styles.inputGroup}>
           <View style={styles.inputIcon}>
-            <Lock size={20} color={isDark ? '#94a3b8' : '#64748b'} />
+            <Feather name="lock" size={20} color="#94a3b8" />
           </View>
           <TextInput
-            style={[styles.input, isDark && styles.darkInput]}
+            style={styles.input}
             value={password}
             onChangeText={setPassword}
             placeholder="Password"
-            placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+            placeholderTextColor="#94a3b8"
             secureTextEntry
           />
         </View>
@@ -77,15 +85,33 @@ export default function LoginScreen() {
           style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
           onPress={handleLogin}
           disabled={isLoading}>
-          <LogIn size={20} color="#ffffff" />
           <Text style={styles.loginButtonText}>
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Text>
         </Pressable>
 
+        <View style={styles.dividerContainer}>
+          <View style={styles.divider} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.divider} />
+        </View>
+
+        <Pressable
+          style={styles.googleButton}
+          onPress={handleGoogleLogin}
+          disabled={isLoading}>
+          <Image 
+            source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg' }}
+            style={styles.googleIcon}
+          />
+          <Text style={styles.googleButtonText}>
+            Continue with Google
+          </Text>
+        </Pressable>
+
         <Link href="/auth/forgot-password" asChild>
           <Pressable>
-            <Text style={[styles.forgotPassword, isDark && styles.darkAccentText]}>
+            <Text style={styles.forgotPassword}>
               Forgot Password?
             </Text>
           </Pressable>
@@ -93,12 +119,12 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Text style={[styles.footerText, isDark && styles.darkSubText]}>
+        <Text style={styles.footerText}>
           Don't have an account?
         </Text>
         <Link href="/auth/signup" asChild>
           <Pressable>
-            <Text style={[styles.signupLink, isDark && styles.darkAccentText]}>Sign Up</Text>
+            <Text style={styles.signupLink}>Sign Up</Text>
           </Pressable>
         </Link>
       </View>
@@ -113,27 +139,20 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
   },
-  darkContainer: {
-    backgroundColor: '#0f172a',
-  },
   header: {
+    alignItems: 'center',
     marginBottom: 40,
   },
-  title: {
-    fontSize: 28,
+  logo: {
+    fontSize: 36,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#6366f1',
     marginBottom: 8,
-  },
-  darkText: {
-    color: '#f8fafc',
   },
   subtitle: {
     fontSize: 16,
     color: '#64748b',
-  },
-  darkSubText: {
-    color: '#94a3b8',
+    textAlign: 'center',
   },
   form: {
     gap: 20,
@@ -154,22 +173,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingRight: 12,
     fontSize: 16,
-    color: '#0f172a',
-  },
-  darkInput: {
-    color: '#f8fafc',
-    backgroundColor: '#1e293b',
-    borderColor: '#334155',
+    color: '#334155',
   },
   loginButton: {
-    backgroundColor: '#0891b2',
-    flexDirection: 'row',
+    backgroundColor: '#6366f1',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
     borderRadius: 8,
     marginTop: 10,
-    gap: 8,
   },
   loginButtonDisabled: {
     backgroundColor: '#94a3b8',
@@ -179,14 +191,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e2e8f0',
+  },
+  dividerText: {
+    paddingHorizontal: 16,
+    color: '#94a3b8',
+    fontSize: 14,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    gap: 12,
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+  },
+  googleButtonText: {
+    color: '#334155',
+    fontSize: 16,
+    fontWeight: '500',
+  },
   forgotPassword: {
     textAlign: 'center',
     marginTop: 16,
-    color: '#0891b2',
+    color: '#6366f1',
     fontSize: 14,
-  },
-  darkAccentText: {
-    color: '#38bdf8',
   },
   footer: {
     flexDirection: 'row',
@@ -202,6 +246,6 @@ const styles = StyleSheet.create({
   signupLink: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0891b2',
+    color: '#6366f1',
   },
 }); 
