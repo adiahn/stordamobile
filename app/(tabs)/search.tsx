@@ -34,13 +34,16 @@ export default function SearchScreen() {
     if (!searchQuery) return;
     
     // This is a mock search - in a real app, you would call your API
+    // For demo purposes, let's check if the search query contains "stolen"
+    const isDeviceStolen = searchQuery.toLowerCase().includes("stolen");
+    
     const mockResult = {
       id: 'DEV_123456',
-      imei: '359269023456789',
+      imei: searchQuery, // Use the search query as IMEI for demo
       model: 'iPhone 13',
-      isStolen: true,
+      isStolen: isDeviceStolen,
       addedAt: '2024-01-20',
-      status: 'reported',
+      status: isDeviceStolen ? 'reported' : 'owned',
       ownerName: 'Sarah Johnson',
       ownerContact: 'sarah.j@example.com',
       lastSeen: '2024-02-15',
@@ -70,158 +73,160 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.darkContainer]}>
-      <View style={[styles.searchBar, isDark && styles.darkSearchBar]}>
-        <TextInput
-          style={[styles.searchInput, isDark && styles.darkSearchInput]}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search by IMEI or Device ID"
-          placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
-          returnKeyType="search"
-          onSubmitEditing={handleSearch}
-        />
-        <Pressable style={styles.searchButton} onPress={handleSearch}>
-          <Search size={20} color="#ffffff" />
-        </Pressable>
-      </View>
-
-      {searchResult && (
-        <View style={[styles.resultCard, isDark && styles.darkCard]}>
-          <View style={styles.resultHeader}>
-            <Text style={[styles.resultTitle, isDark && styles.darkText]}>
-              {searchResult.model}
-            </Text>
-            {searchResult.isStolen && (
-              <View style={styles.stolenBadge}>
-                <AlertTriangle size={16} color="#dc2626" />
-                <Text style={styles.stolenText}>Stolen</Text>
-              </View>
-            )}
-          </View>
-          
-          <View style={styles.resultInfo}>
-            <View style={styles.infoRow}>
-              <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
-              <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.id}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
-              <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.imei}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={[styles.label, isDark && styles.darkLabel]}>Status:</Text>
-              <Text style={[styles.value, isDark && styles.darkText]}>
-                {searchResult.isStolen ? 'Reported Stolen' : searchResult.status}
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.resultActions}>
-            <Pressable style={styles.saveButton} onPress={saveSearchResult}>
-              <Bookmark size={16} color="#ffffff" />
-              <Text style={styles.saveButtonText}>Save Search</Text>
-            </Pressable>
-          </View>
-          
-          <Pressable style={styles.expandButton} onPress={toggleExpand}>
-            <Text style={styles.expandButtonText}>
-              {isExpanded ? 'Show Less' : 'Show More Details'}
-            </Text>
-            {isExpanded ? (
-              <ChevronUp size={16} color="#0891b2" />
-            ) : (
-              <ChevronDown size={16} color="#0891b2" />
-            )}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={[styles.searchBar, isDark && styles.darkSearchBar]}>
+          <TextInput
+            style={[styles.searchInput, isDark && styles.darkSearchInput]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search by IMEI or Device ID"
+            placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+            returnKeyType="search"
+            onSubmitEditing={handleSearch}
+          />
+          <Pressable style={styles.searchButton} onPress={handleSearch}>
+            <Search size={20} color="#ffffff" />
           </Pressable>
-          
-          {isExpanded && (
-            <View style={styles.expandedContent}>
-              <Text style={[styles.expandedTitle, isDark && styles.darkText]}>
-                Device Details
+        </View>
+
+        {searchResult && (
+          <View style={[styles.resultCard, isDark && styles.darkCard]}>
+            <View style={styles.resultHeader}>
+              <Text style={[styles.resultTitle, isDark && styles.darkText]}>
+                {searchResult.model}
               </Text>
+              {searchResult.isStolen && (
+                <View style={styles.stolenBadge}>
+                  <AlertTriangle size={16} color="#dc2626" />
+                  <Text style={styles.stolenText}>Stolen</Text>
+                </View>
+              )}
+            </View>
+            
+            <View style={styles.resultInfo}>
               <View style={styles.infoRow}>
                 <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
-                <Text style={[styles.value, isDark && styles.darkText]}>
-                  {searchResult.id}
-                </Text>
+                <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.id}</Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
-                <Text style={[styles.value, isDark && styles.darkText]}>
-                  {searchResult.imei}
-                </Text>
+                <Text style={[styles.value, isDark && styles.darkText]}>{searchResult.imei}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text style={[styles.label, isDark && styles.darkLabel]}>Model:</Text>
+                <Text style={[styles.label, isDark && styles.darkLabel]}>Status:</Text>
                 <Text style={[styles.value, isDark && styles.darkText]}>
-                  {searchResult.model}
-                </Text>
-              </View>
-              
-              <Text style={[styles.expandedTitle, isDark && styles.darkText, styles.ownerSectionTitle]}>
-                Owner Information
-              </Text>
-              <View style={styles.infoRow}>
-                <Text style={[styles.label, isDark && styles.darkLabel]}>Owner:</Text>
-                <Text style={[styles.value, isDark && styles.darkText]}>
-                  {searchResult.ownerName}
-                </Text>
-              </View>
-              {searchResult.isStolen && (
-                <View style={styles.contactSection}>
-                  <Text style={[styles.contactTitle, isDark && styles.darkText]}>
-                    This device has been reported stolen
-                  </Text>
-                  <Text style={[styles.contactInfo, isDark && styles.darkSubText]}>
-                    If you have found this device, please contact the owner at {searchResult.ownerContact} 
-                    or report to local authorities.
-                  </Text>
-                  <Pressable style={styles.contactButton}>
-                    <Mail size={16} color="#ffffff" />
-                    <Text style={styles.contactButtonText}>Contact Owner</Text>
-                  </Pressable>
-                </View>
-              )}
-              <View style={styles.infoRow}>
-                <Text style={[styles.label, isDark && styles.darkLabel]}>Last Seen:</Text>
-                <Text style={[styles.value, isDark && styles.darkText]}>
-                  {searchResult.lastSeen}
+                  {searchResult.isStolen ? 'Reported Stolen' : searchResult.status}
                 </Text>
               </View>
             </View>
+            
+            <View style={styles.resultActions}>
+              <Pressable style={styles.saveButton} onPress={saveSearchResult}>
+                <Bookmark size={16} color="#ffffff" />
+                <Text style={styles.saveButtonText}>Save Search</Text>
+              </Pressable>
+            </View>
+            
+            <Pressable style={styles.expandButton} onPress={toggleExpand}>
+              <Text style={styles.expandButtonText}>
+                {isExpanded ? 'Show Less' : 'Show More Details'}
+              </Text>
+              {isExpanded ? (
+                <ChevronUp size={16} color="#0891b2" />
+              ) : (
+                <ChevronDown size={16} color="#0891b2" />
+              )}
+            </Pressable>
+            
+            {isExpanded && (
+              <View style={styles.expandedContent}>
+                <Text style={[styles.expandedTitle, isDark && styles.darkText]}>
+                  Device Details
+                </Text>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.label, isDark && styles.darkLabel]}>Device ID:</Text>
+                  <Text style={[styles.value, isDark && styles.darkText]}>
+                    {searchResult.id}
+                  </Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.label, isDark && styles.darkLabel]}>IMEI:</Text>
+                  <Text style={[styles.value, isDark && styles.darkText]}>
+                    {searchResult.imei}
+                  </Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.label, isDark && styles.darkLabel]}>Model:</Text>
+                  <Text style={[styles.value, isDark && styles.darkText]}>
+                    {searchResult.model}
+                  </Text>
+                </View>
+                
+                <Text style={[styles.expandedTitle, isDark && styles.darkText, styles.ownerSectionTitle]}>
+                  Owner Information
+                </Text>
+                <View style={styles.infoRow}>
+                  <Text style={[styles.label, isDark && styles.darkLabel]}>Owner:</Text>
+                  <Text style={[styles.value, isDark && styles.darkText]}>
+                    {searchResult.ownerName}
+                  </Text>
+                </View>
+                {searchResult.isStolen && (
+                  <View style={styles.contactSection}>
+                    <Text style={[styles.contactTitle, isDark && styles.darkText]}>
+                      This device has been reported stolen
+                    </Text>
+                    <Text style={[styles.contactInfo, isDark && styles.darkSubText]}>
+                      If you have found this device, please contact the owner at {searchResult.ownerContact} 
+                      or report to local authorities.
+                    </Text>
+                    <Pressable style={styles.contactButton}>
+                      <Mail size={16} color="#ffffff" />
+                      <Text style={styles.contactButtonText}>Contact Owner</Text>
+                    </Pressable>
+                  </View>
+                )}
+                <View style={styles.infoRow}>
+                  <Text style={[styles.label, isDark && styles.darkLabel]}>Last Seen:</Text>
+                  <Text style={[styles.value, isDark && styles.darkText]}>
+                    {searchResult.lastSeen}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        <View style={styles.savedSearchesSection}>
+          <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Saved Searches</Text>
+          {savedSearches.length === 0 ? (
+            <Text style={[styles.emptyText, isDark && styles.darkSubText]}>
+              No saved searches yet
+            </Text>
+          ) : (
+            savedSearches.map(saved => (
+              <Pressable 
+                key={saved.id}
+                style={[styles.savedSearchItem, isDark && styles.darkCard]}
+                onPress={() => {
+                  setSearchQuery(saved.imei);
+                  setSearchResult(saved);
+                }}
+              >
+                <View>
+                  <Text style={[styles.savedSearchTitle, isDark && styles.darkText]}>
+                    {saved.model}
+                  </Text>
+                  <Text style={[styles.savedSearchSubtitle, isDark && styles.darkSubText]}>
+                    IMEI: {saved.imei}
+                  </Text>
+                </View>
+                <ChevronRight size={16} color={isDark ? '#94a3b8' : '#64748b'} />
+              </Pressable>
+            ))
           )}
         </View>
-      )}
-
-      <View style={styles.savedSearchesSection}>
-        <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Saved Searches</Text>
-        {savedSearches.length === 0 ? (
-          <Text style={[styles.emptyText, isDark && styles.darkSubText]}>
-            No saved searches yet
-          </Text>
-        ) : (
-          savedSearches.map(saved => (
-            <Pressable 
-              key={saved.id}
-              style={[styles.savedSearchItem, isDark && styles.darkCard]}
-              onPress={() => {
-                setSearchQuery(saved.imei);
-                setSearchResult(saved);
-              }}
-            >
-              <View>
-                <Text style={[styles.savedSearchTitle, isDark && styles.darkText]}>
-                  {saved.model}
-                </Text>
-                <Text style={[styles.savedSearchSubtitle, isDark && styles.darkSubText]}>
-                  IMEI: {saved.imei}
-                </Text>
-              </View>
-              <ChevronRight size={16} color={isDark ? '#94a3b8' : '#64748b'} />
-            </Pressable>
-          ))
-        )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -320,17 +325,17 @@ const styles = StyleSheet.create({
   stolenBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fee2e2',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    gap: 8,
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    maxWidth: 100,
   },
   stolenText: {
-    flex: 1,
     color: '#dc2626',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
+    marginLeft: 4,
   },
   expandButton: {
     flexDirection: 'row',
@@ -470,5 +475,8 @@ const styles = StyleSheet.create({
   },
   ownerSectionTitle: {
     marginTop: 16,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
 });

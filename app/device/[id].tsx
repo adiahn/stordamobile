@@ -230,7 +230,7 @@ export default function DeviceDetailsScreen() {
           ))}
         </View>
 
-        {!device.isStolen && device.status === 'owned' && (
+        {device.status === 'owned' && !device.isStolen && (
           <Pressable
             style={styles.reportButton}
             onPress={handleReportStolen}>
