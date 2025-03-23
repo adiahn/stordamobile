@@ -12,24 +12,26 @@ export default function HomeScreen() {
         <Text style={styles.greeting}>Good morning,</Text>
         <Text style={styles.name}>Adnan</Text>
       </View>
-
-      <LinearGradient
-        colors={['#A6C8FF', '#D6B4FC']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.statsCard}>
-        <View style={styles.statsContent}>
-          <Shield size={32} color="#FFF" />
-          <Text style={styles.statsTitle}>Storda Protection</Text>
-          <Text style={styles.statsNumber}>3</Text>
-        </View>
-      </LinearGradient>
+      <Pressable>
+        <LinearGradient
+          colors={['#A6C8FF', '#D6B4FC']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.statsCard}>
+          <View style={styles.statsContent}>
+            <Shield size={32} color="#FFF" />
+            <Text style={styles.statsTitle}>Storda Protection</Text>
+            <Text style={styles.statsNumber}>3</Text>
+          </View>
+        </LinearGradient>
+      </Pressable>
 
       <View style={styles.actionsContainer}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionButtons}>
           <AnimatedPressable style={[styles.actionButton, styles.addDevice]}>
             <Plus size={24} color="#A6C8FF" />
+            
             <Text style={styles.actionButtonText}>Add Device</Text>
           </AnimatedPressable>
           
