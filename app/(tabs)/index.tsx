@@ -28,7 +28,7 @@ export default function HomeScreen() {
     {
       name: 'Iphone 11 Pro',
       imei: '3121321122112',
-      macAddress: '30291masmasdmas',
+      macAddress: '30291masmdsdmas',
       Ownership: false,
       key: 2,
     },
