@@ -22,37 +22,22 @@ export default function HomeScreen() {
       name: 'Iphone 13 Pro',
       imei: '3121321122112',
       macAddress: '30291masmasdmas',
+      Ownership: true,
       key: 1,
     },
     {
-      name: 'Iphone 13 Pro',
+      name: 'Iphone 11 Pro',
       imei: '3121321122112',
       macAddress: '30291masmasdmas',
+      Ownership: false,
       key: 2,
     },
     {
       name: 'Iphone 13 Pro',
       imei: '3121321122112',
       macAddress: '30291masmasdmas',
+      Ownership: false,
       key: 3,
-    },
-    {
-      name: 'Iphone 13 Pro',
-      imei: '3121321122112',
-      macAddress: '30291masmasdmas',
-      key: 4,
-    },
-    {
-      name: 'Iphone 13 Pro',
-      imei: '3121321122112',
-      macAddress: '30291masmasdmas',
-      key: 5,
-    },
-    {
-      name: 'Iphone 13 Pro',
-      imei: '3121321122112',
-      macAddress: '30291masmasdmas',
-      key: 6,
     },
   ]);
 
@@ -113,9 +98,8 @@ export default function HomeScreen() {
             (
               device
             ) => (
-              <View key={device.id}>
-                {' '}
-                <Text>{device.name}</Text> 
+              <View style={styles.deviceCard} key={device.key}>
+                <Text style={styles.deviceName}>{device.name}</Text> 
               </View>
             )
           )}
@@ -232,8 +216,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     shadowColor: '#000',
+    height: 100,
     shadowOffset: {
       width: 0,
       height: 4,
