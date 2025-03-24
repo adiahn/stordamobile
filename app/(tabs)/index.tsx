@@ -1,43 +1,102 @@
+import { useRouter } from 'expo-router';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Shield, Plus, TriangleAlert as AlertTriangle, ArrowRight } from 'lucide-react-native';
+import {
+  Shield,
+  Plus,
+  TriangleAlert as AlertTriangle,
+  ArrowRight,
+} from 'lucide-react-native';
+import Feather from '@expo/vector-icons/Feather';
 import Animated from 'react-native-reanimated';
+import { useState } from 'react';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const deviceId = 'dev_1';
+
+  const [devices, setDevices] = useState([
+    {
+      name: 'Iphone 13 Pro',
+      imei: '3121321122112',
+      macAddress: '30291masmasdmas',
+      key: 1,
+    },
+    {
+      name: 'Iphone 13 Pro',
+      imei: '3121321122112',
+      macAddress: '30291masmasdmas',
+      key: 2,
+    },
+    {
+      name: 'Iphone 13 Pro',
+      imei: '3121321122112',
+      macAddress: '30291masmasdmas',
+      key: 3,
+    },
+    {
+      name: 'Iphone 13 Pro',
+      imei: '3121321122112',
+      macAddress: '30291masmasdmas',
+      key: 4,
+    },
+    {
+      name: 'Iphone 13 Pro',
+      imei: '3121321122112',
+      macAddress: '30291masmasdmas',
+      key: 5,
+    },
+    {
+      name: 'Iphone 13 Pro',
+      imei: '3121321122112',
+      macAddress: '30291masmasdmas',
+      key: 6,
+    },
+  ]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Good morning,</Text>
         <Text style={styles.name}>Adnan</Text>
       </View>
-      <Pressable>
-        <LinearGradient
-          colors={['#A6C8FF', '#D6B4FC']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.statsCard}>
-          <View style={styles.statsContent}>
-            <Shield size={32} color="#FFF" />
-            <Text style={styles.statsTitle}>Storda Protection</Text>
-            <Text style={styles.statsNumber}>3</Text>
-          </View>
-        </LinearGradient>
-      </Pressable>
+      <LinearGradient
+        colors={['#A6C8FF', '#D6B4FC']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.statsCard}
+      >
+        <View style={styles.statsContent}>
+          <Shield size={32} color="#FFF" />
+          <Text style={styles.statsTitle}>Storda Protection</Text>
+          <Text style={styles.statsNumber}>3</Text>
+        </View>
+      </LinearGradient>
 
       <View style={styles.actionsContainer}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
+
         <View style={styles.actionButtons}>
-          <AnimatedPressable style={[styles.actionButton, styles.addDevice]}>
-            <Plus size={24} color="#A6C8FF" />
-            
-            <Text style={styles.actionButtonText}>Add Device</Text>
+          <AnimatedPressable
+            onPress={() => {
+              router.push(`/devices/dev_1`);
+            }}
+            style={[styles.actionButton, styles.addDevice]}
+          >
+            <Feather name="send" size={24} color="#A6C8FF" />
+            <Text style={styles.actionButtonText}>Transfer Device</Text>
           </AnimatedPressable>
-          
-          <AnimatedPressable style={[styles.actionButton, styles.reportStolen]}>
-            <AlertTriangle size={24} color="#FF6B6B" />
-            <Text style={styles.actionButtonText}>Report Stolen</Text>
+
+          <AnimatedPressable
+            onPress={() => {
+              router.push(`/register`);
+            }}
+            style={[styles.actionButton, styles.addDevice]}
+          >
+            <Plus size={24} color="#A6C8FF" />
+            <Text style={styles.actionButtonText}>Add Device</Text>
           </AnimatedPressable>
         </View>
       </View>
@@ -49,22 +108,27 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>See all</Text>
           </Pressable>
         </View>
-
-        {['iPhone 13 Pro', 'MacBook Pro', 'iPad Air'].map((device, index) => (
-          <AnimatedPressable key={index} style={styles.deviceCard}>
-            <View>
-              <Text style={styles.deviceName}>{device}</Text>
-              <Text style={styles.deviceStatus}>Protected</Text>
-            </View>
-            <ArrowRight size={20} color="#A6C8FF" />
-          </AnimatedPressable>
-        ))}
+        <View>
+          {devices.map(
+            (
+              device
+            ) => (
+              <View key={device.id}>
+                {' '}
+                <Text>{device.name}</Text> 
+              </View>
+            )
+          )}
+        </View>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  pressableButton: {
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FDF3E7',
@@ -189,3 +253,13 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 });
+
+{
+  /* <AnimatedPressable key={index} style={styles.deviceCard}>
+<View>
+  <Text style={styles.deviceName}>{device}</Text>
+  <Text style={styles.deviceStatus}>Protected</Text>
+</View>
+<ArrowRight size={20} color="#A6C8FF" />
+</AnimatedPressable> */
+}

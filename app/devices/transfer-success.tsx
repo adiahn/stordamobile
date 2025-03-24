@@ -24,7 +24,7 @@ export default function TransferSuccessScreen() {
         
         <Text style={styles.title}>Transfer Initiated!</Text>
         <Text style={styles.subtitle}>
-          Transfer request has been sent to @johndoe
+          Transfer request has been sent to @adiahn
         </Text>
 
         <View style={styles.infoCard}>

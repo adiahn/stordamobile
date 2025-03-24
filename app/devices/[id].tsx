@@ -1,7 +1,20 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  TextInput,
+} from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowRight, UserCheck, History, CircleAlert as AlertCircle } from 'lucide-react-native';
+import {
+  ArrowRight,
+  ArrowLeft,
+  UserCheck,
+  History,
+  CircleAlert as AlertCircle,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
 
@@ -32,6 +45,16 @@ export default function DeviceDetailsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()} // Navigate to the previous page
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 20,
+          }}
+        >
+          <ArrowLeft size={24} color="black" />
+        </Pressable>
         <Text style={styles.title}>Device Details</Text>
         <Text style={styles.subtitle}>{device.name}</Text>
       </View>
@@ -40,7 +63,8 @@ export default function DeviceDetailsScreen() {
         colors={['#A6C8FF33', '#D6B4FC33']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.detailsCard}>
+        style={styles.detailsCard}
+      >
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Storda ID</Text>
           <Text style={styles.detailValue}>{device.stordaId}</Text>
@@ -59,7 +83,9 @@ export default function DeviceDetailsScreen() {
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Added On</Text>
-          <Text style={styles.detailValue}>{new Date(device.addedDate).toLocaleDateString()}</Text>
+          <Text style={styles.detailValue}>
+            {new Date(device.addedDate).toLocaleDateString()}
+          </Text>
         </View>
       </LinearGradient>
 
@@ -67,7 +93,8 @@ export default function DeviceDetailsScreen() {
         <View style={styles.actionButtons}>
           <AnimatedPressable
             style={styles.transferButton}
-            onPress={() => setShowTransfer(true)}>
+            onPress={() => setShowTransfer(true)}
+          >
             <UserCheck size={24} color="#FFF" />
             <Text style={styles.transferButtonText}>Transfer Ownership</Text>
           </AnimatedPressable>
@@ -98,14 +125,16 @@ export default function DeviceDetailsScreen() {
 
           <AnimatedPressable
             style={[styles.transferButton, styles.confirmButton]}
-            onPress={handleTransfer}>
+            onPress={handleTransfer}
+          >
             <Text style={styles.transferButtonText}>Continue to Payment</Text>
             <ArrowRight size={20} color="#FFF" />
           </AnimatedPressable>
 
           <AnimatedPressable
             style={styles.cancelButton}
-            onPress={() => setShowTransfer(false)}>
+            onPress={() => setShowTransfer(false)}
+          >
             <Text style={styles.cancelButtonText}>Cancel Transfer</Text>
           </AnimatedPressable>
         </View>

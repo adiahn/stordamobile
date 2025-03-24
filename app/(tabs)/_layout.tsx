@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Chrome as Home, Shield, Wallet, Settings, CircleUser as UserCircle } from 'lucide-react-native';
 import { View, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
+import Feather from '@expo/vector-icons/Feather';
 
 const ICON_SIZE = 24;
 const ICON_COLOR = '#A6C8FF';
@@ -24,16 +25,16 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Home size={ICON_SIZE} color={color} />,
+          tabBarIcon: ({ color }) => <Feather name="home" size={ICON_SIZE} color={ICON_COLOR} />
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="devices"
         options={{
           title: 'Devices',
           tabBarIcon: ({ color }) => <Shield size={ICON_SIZE} color={color} />,
         }}
-      />
+      /> */}
       <Tabs.Screen
         name="wallet"
         options={{

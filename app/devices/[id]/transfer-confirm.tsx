@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Shield, ArrowRight, Clock } from 'lucide-react-native';
+import { Shield, ArrowRight,ArrowLeft, Clock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
 
@@ -14,6 +14,17 @@ export default function TransferConfirmScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()} // Navigate to the previous page
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 20,
+          }}
+        >
+          <ArrowLeft size={24} color="black" />
+          <Text style={{ marginLeft: 10, fontSize: 12 }}>Back</Text>
+        </Pressable>
         <Text style={styles.title}>Confirm Transfer</Text>
         <Text style={styles.subtitle}>Review transfer details</Text>
       </View>
@@ -22,7 +33,8 @@ export default function TransferConfirmScreen() {
         colors={['#A6C8FF33', '#D6B4FC33']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.summaryCard}>
+        style={styles.summaryCard}
+      >
         <View style={styles.summaryHeader}>
           <Shield size={24} color="#A6C8FF" />
           <Text style={styles.summaryTitle}>Transfer Summary</Text>
@@ -46,7 +58,8 @@ export default function TransferConfirmScreen() {
         <View style={styles.infoBox}>
           <Clock size={20} color="#666" />
           <Text style={styles.infoText}>
-            Transfer request expires in 24 hours if not confirmed by the recipient
+            Transfer request expires in 24 hours if not confirmed by the
+            recipient
           </Text>
         </View>
       </LinearGradient>
@@ -58,7 +71,8 @@ export default function TransferConfirmScreen() {
 
       <AnimatedPressable
         style={styles.cancelButton}
-        onPress={() => router.back()}>
+        onPress={() => router.back()}
+      >
         <Text style={styles.cancelButtonText}>Cancel Transfer</Text>
       </AnimatedPressable>
     </ScrollView>

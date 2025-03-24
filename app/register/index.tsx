@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Smartphone, QrCode, ArrowRight, CircleAlert as AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, Smartphone, QrCode, ArrowRight, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
 
@@ -42,6 +42,16 @@ export default function RegisterDevicePage() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
+      <Pressable
+          onPress={() => router.back()} // Navigate to the previous page
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 20,
+          }}
+        >
+          <ArrowLeft size={24} color="black" />
+        </Pressable>
         <Text style={styles.title}>Register Device</Text>
         <Text style={styles.subtitle}>Protect your device with Storda</Text>
       </View>

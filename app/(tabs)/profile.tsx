@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { Settings, ChevronRight, Bell, Shield, CreditCard, CircleHelp as HelpCircle, LogOut } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 const menuItems = [
   {
     id: 'notifications',
@@ -36,6 +36,7 @@ const menuItems = [
 ];
 
 export default function ProfileScreen() {
+  const router = useRouter();
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
@@ -74,7 +75,7 @@ export default function ProfileScreen() {
         ))}
       </View>
 
-      <AnimatedPressable style={styles.logoutButton}>
+      <AnimatedPressable style={styles.logoutButton} onPress={() => router.push(`/auth/login`)}>
         <LogOut size={24} color="#FF6B6B" />
         <Text style={styles.logoutText}>Log Out</Text>
       </AnimatedPressable>
