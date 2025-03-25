@@ -22,21 +22,24 @@ export default function HomeScreen() {
       name: 'Iphone 13 Pro',
       imei: '3121321122112',
       macAddress: '30291masmasdmas',
-      Ownership: true,
+      id: 'SRD-21112',
+      ownership: true,
       key: 1,
     },
     {
       name: 'Iphone 11 Pro',
       imei: '3121321122112',
+      id: 'SRD-21112',
       macAddress: '30291masmdsdmas',
-      Ownership: false,
+      ownership: false,
       key: 2,
     },
     {
-      name: 'Iphone 13 Pro',
+      name: 'Samsung Z Fold 3',
       imei: '3121321122112',
+      id: 'SRD-21112',
       macAddress: '30291masmasdmas',
-      Ownership: false,
+      ownership: false,
       key: 3,
     },
   ]);
@@ -47,6 +50,7 @@ export default function HomeScreen() {
         <Text style={styles.greeting}>Good morning,</Text>
         <Text style={styles.name}>Adnan</Text>
       </View>
+
       <LinearGradient
         colors={['#A6C8FF', '#D6B4FC']}
         start={{ x: 0, y: 0 }}
@@ -93,26 +97,46 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>See all</Text>
           </Pressable>
         </View>
-        <View>
-          {devices.map(
-            (
-              device
-            ) => (
-              <View style={styles.deviceCard} key={device.key}>
-                <Text style={styles.deviceName}>{device.name}</Text> 
+        {devices.map((device) => (
+          <Pressable
+            key={device.key}
+            style={styles.deviceCard}
+            onPress={() => router.push({ pathname: "/view/[id]", params: { id: device.id } })}
+          >
+            <View style={styles.deviceCardContent}>
+              <View style={styles.deviceCardLeft}>
+                <Text style={styles.deviceName}>{device.name}</Text>
+                <View style={styles.deviceDetails}>
+                  <Text style={styles.deviceDetailLabel}>Device ID:</Text>
+                  <Text style={styles.deviceDetailValue}>{device.id}</Text>
+                </View>
+                <View style={styles.deviceDetails}>
+                  <Text style={styles.deviceDetailLabel}>IMEI:</Text>
+                  <Text style={styles.deviceDetailValue}>{device.imei}</Text>
+                </View>
               </View>
-            )
-          )}
-        </View>
+              <View style={styles.deviceCardRight}>
+                <View
+                  style={[
+                    styles.ownershipBadge,
+                    device.ownership ? styles.ownedBadge : styles.unownedBadge,
+                  ]}
+                >
+                  <Text style={styles.ownershipBadgeText}>
+                    {device.ownership ? 'Owned' : 'Unowned'}
+                  </Text>
+                </View>
+                <ArrowRight size={24} color="#A6C8FF" />
+              </View>
+            </View>
+          </Pressable>
+        ))}
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  pressableButton: {
-    alignItems: 'center',
-  },
   container: {
     flex: 1,
     backgroundColor: '#FDF3E7',
@@ -185,10 +209,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#A6C8FF',
   },
-  reportStolen: {
-    borderWidth: 1,
-    borderColor: '#FF6B6B',
-  },
   actionButtonText: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
@@ -212,38 +232,66 @@ const styles = StyleSheet.create({
   deviceCard: {
     backgroundColor: '#FFF',
     borderRadius: 16,
-    padding: 16,
     marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     shadowColor: '#000',
-    height: 100,
     shadowOffset: {
       width: 0,
       height: 4,
     },
     shadowOpacity: 0.1,
     shadowRadius: 12,
+    elevation: 3,
+  },
+  deviceCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  deviceCardLeft: {
+    flex: 1,
+    marginRight: 12,
   },
   deviceName: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 18,
     color: '#121826',
+    marginBottom: 8,
+  },
+  deviceDetails: {
+    flexDirection: 'row',
     marginBottom: 4,
   },
-  deviceStatus: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
+  deviceDetailLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
     color: '#666',
+    marginRight: 6,
+  },
+  deviceDetailValue: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#121826',
+  },
+  deviceCardRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ownershipBadge: {
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 12,
+  },
+  ownedBadge: {
+    backgroundColor: '#E6F2FF',
+  },
+  unownedBadge: {
+    backgroundColor: '#FFE6E6',
+  },
+  ownershipBadgeText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: '#121826',
   },
 });
-
-{
-  /* <AnimatedPressable key={index} style={styles.deviceCard}>
-<View>
-  <Text style={styles.deviceName}>{device}</Text>
-  <Text style={styles.deviceStatus}>Protected</Text>
-</View>
-<ArrowRight size={20} color="#A6C8FF" />
-</AnimatedPressable> */
-}
