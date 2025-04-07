@@ -97,12 +97,14 @@ const styles = StyleSheet.create({
     color: '#121826',
     marginBottom: 8,
   },
+  
   infoNote: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
   },
+
   continueButton: {
     height: 56,
     backgroundColor: '#A6C8FF',
@@ -113,6 +115,7 @@ const styles = StyleSheet.create({
     gap: 8,
     width: '100%',
   },
+  
   continueButtonText: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,

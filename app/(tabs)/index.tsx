@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useDeviceStore } from '../store/store';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -101,7 +102,13 @@ export default function HomeScreen() {
           <Pressable
             key={device.key}
             style={styles.deviceCard}
-            onPress={() => router.push({ pathname: "/view/[id]", params: { id: device.id } })}
+            onPress={() => {
+              useDeviceStore.getState().setSelectedDevice(device);
+              router.push({
+                pathname: '/view/[id]',
+                params: { id: device.id },
+              });
+            }}
           >
             <View style={styles.deviceCardContent}>
               <View style={styles.deviceCardLeft}>

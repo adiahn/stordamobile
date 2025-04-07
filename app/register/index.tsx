@@ -9,7 +9,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const DEVICE_BRANDS = [
   'Apple',
-  'Samsung',
+  'Sam4sung',
   'Google',
   'OnePlus',
   'Xiaomi',
@@ -24,7 +24,6 @@ export default function RegisterDevicePage() {
   const [macAddress, setMacAddress] = useState('');
   const [brand, setBrand] = useState('');
   const [error, setError] = useState<string | null>(null);
-
   const handleContinue = () => {
     if (!imei.trim()) {
       setError('IMEI number is required');
