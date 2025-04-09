@@ -25,16 +25,17 @@ export default function DeviceDetailsScreen() {
 
   // Use the device from store, or fallback to params
   const device = storeDevice || {
-    name: params.name || 'Unknown Device',
-    imei: params.imei || 'N/A',
-    macAddress: params.macAddress || 'N/A',
-    id: params.Id || 'Unknown',
+    name: String(params.name || 'Unknown Device'),
+    imei: String(params.imei || 'N/A'),
+    macAddress: String(params.macAddress || 'N/A'),
+    id: String(params.Id || 'Unknown'),
     ownership: params.ownership === 'true',
-    storage: params.storage || '',
-    color: params.color || '',
-    brand: params.brand || '',
-    registrationDate: params.registrationDate || new Date().toISOString(),
-    status: 'active'
+    storage: String(params.storage || ''),
+    color: String(params.color || ''),
+    brand: String(params.brand || ''),
+    registrationDate: String(params.registrationDate || new Date().toISOString()),
+    status: 'active',
+    key: Date.now() // Add a key for the fallback device
   };
 
   const handlePinSubmit = () => {

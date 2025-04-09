@@ -239,16 +239,6 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.actionButtonText}>View All</Text>
             </Pressable>
-            
-            <Pressable
-              onPress={() => initiateAction('report')}
-              style={[styles.actionButton]}
-            >
-              <View style={styles.actionIconContainer}>
-                <Feather name="alert-triangle" size={16} color="#5A71E4" />
-              </View>
-              <Text style={styles.actionButtonText}>Report</Text>
-            </Pressable>
           </View>
         </View>
 
