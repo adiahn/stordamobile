@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image } from 'react-native';
-import { router } from 'expo-router';
-import { Camera, Upload, ArrowRight } from 'lucide-react-native';
-import Animated from 'react-native-reanimated';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Platform } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -10,36 +10,93 @@ const STORAGE_OPTIONS = ['64GB', '128GB', '256GB', '512GB', '1TB'];
 const COLORS = ['Midnight Black', 'Sierra Blue', 'Gold', 'Silver', 'Graphite'];
 
 export default function DeviceDetailsPage() {
-  const [model, setModel] = useState('');
-  const [storage, setStorage] = useState('');
-  const [color, setColor] = useState('');
+  const params = useLocalSearchParams();
+  
+  const [model, setModel] = useState(params.detectedName as string || '');
+  const [storage, setStorage] = useState(params.detectedStorage as string || '');
+  const [color, setColor] = useState(params.detectedColor as string || '');
   const [hasReceipt, setHasReceipt] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
+  const [isPreFilled, setIsPreFilled] = useState(false);
+
+  useEffect(() => {
+    // Check if we have detected information
+    if (params.detectedName || params.detectedStorage || params.detectedColor) {
+      setIsPreFilled(true);
+    }
+  }, [params]);
 
   const handleContinue = () => {
-    router.push('/register/payment');
+    router.push({
+      pathname: '/register/payment',
+      params: {
+        imei: params.imei,
+        macAddress: params.macAddress,
+        brand: params.brand,
+        model,
+        storage,
+        color,
+        hasReceipt: hasReceipt ? 'true' : 'false',
+        hasPhoto: hasPhoto ? 'true' : 'false'
+      }
+    });
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Feather name="arrow-left" size={22} color="#222D3A" />
+        </Pressable>
         <Text style={styles.title}>Device Details</Text>
         <Text style={styles.subtitle}>Tell us more about your device</Text>
       </View>
 
-      <View style={styles.formContainer}>
+      {isPreFilled && (
+        <Animated.View 
+          style={styles.detectedInfo}
+          entering={FadeInUp.duration(500).delay(200)}
+        >
+          <View style={styles.detectedHeader}>
+            <Feather name="check-circle" size={20} color="#30B050" />
+            <Text style={styles.detectedHeaderText}>Device Information Detected</Text>
+          </View>
+          <Text style={styles.detectedSubtext}>
+            We've automatically filled in your device information. Please verify or modify as needed.
+          </Text>
+        </Animated.View>
+      )}
+
+      <Animated.View 
+        style={styles.formContainer}
+        entering={FadeInUp.duration(500).delay(300)}
+      >
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Model Name</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Model Name</Text>
+            {isPreFilled && <Text style={styles.autoFilled}>Auto-detected</Text>}
+          </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, isPreFilled && styles.inputDetected]}
             value={model}
             onChangeText={setModel}
             placeholder="e.g., iPhone 13 Pro, Galaxy S21"
+            placeholderTextColor="#8494A9"
           />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Storage Capacity</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Storage Capacity</Text>
+            {isPreFilled && storage && <Text style={styles.autoFilled}>Auto-detected</Text>}
+          </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -65,7 +122,10 @@ export default function DeviceDetailsPage() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Device Color</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Device Color</Text>
+            {isPreFilled && color && <Text style={styles.autoFilled}>Auto-detected</Text>}
+          </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -98,7 +158,7 @@ export default function DeviceDetailsPage() {
               style={[styles.uploadCard, hasReceipt && styles.uploadCardActive]}
               onPress={() => setHasReceipt(!hasReceipt)}>
               <View style={[styles.uploadIcon, hasReceipt && styles.uploadIconActive]}>
-                <Upload size={24} color={hasReceipt ? '#FFF' : '#A6C8FF'} />
+                <Feather name="file-text" size={22} color={hasReceipt ? "#FFF" : "#5A71E4"} />
               </View>
               <Text style={styles.uploadTitle}>Purchase Receipt</Text>
               <Text style={styles.uploadSubtitle}>PDF or Image</Text>
@@ -108,7 +168,7 @@ export default function DeviceDetailsPage() {
               style={[styles.uploadCard, hasPhoto && styles.uploadCardActive]}
               onPress={() => setHasPhoto(!hasPhoto)}>
               <View style={[styles.uploadIcon, hasPhoto && styles.uploadIconActive]}>
-                <Camera size={24} color={hasPhoto ? '#FFF' : '#A6C8FF'} />
+                <Feather name="camera" size={22} color={hasPhoto ? "#FFF" : "#5A71E4"} />
               </View>
               <Text style={styles.uploadTitle}>Device Photo</Text>
               <Text style={styles.uploadSubtitle}>Take or upload photo</Text>
@@ -118,9 +178,9 @@ export default function DeviceDetailsPage() {
 
         <AnimatedPressable style={styles.continueButton} onPress={handleContinue}>
           <Text style={styles.continueButtonText}>Continue to Payment</Text>
-          <ArrowRight size={20} color="#FFF" />
+          <Feather name="arrow-right" size={20} color="#FFF" />
         </AnimatedPressable>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -128,25 +188,58 @@ export default function DeviceDetailsPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDF3E7',
+    backgroundColor: '#F8F9FB',
   },
   content: {
     padding: 20,
     paddingTop: 60,
+    paddingBottom: 40,
   },
   header: {
     marginBottom: 24,
   },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   title: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 28,
-    color: '#121826',
+    color: '#222D3A',
   },
   subtitle: {
     fontFamily: 'Inter-Regular',
     fontSize: 16,
-    color: '#666',
+    color: '#8494A9',
     marginTop: 4,
+  },
+  detectedInfo: {
+    backgroundColor: 'rgba(48, 176, 80, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  detectedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  detectedHeaderText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: '#30B050',
+    marginLeft: 8,
+  },
+  detectedSubtext: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#222D3A',
+    lineHeight: 20,
   },
   formContainer: {
     gap: 24,
@@ -154,45 +247,64 @@ const styles = StyleSheet.create({
   inputGroup: {
     gap: 8,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   label: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: '#121826',
-    marginBottom: 8,
+    color: '#222D3A',
+  },
+  autoFilled: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: '#30B050',
+    backgroundColor: 'rgba(48, 176, 80, 0.1)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
   },
   input: {
-    height: 48,
+    height: 52,
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 16,
     fontFamily: 'Inter-Regular',
     fontSize: 16,
-    color: '#121826',
+    color: '#222D3A',
+  },
+  inputDetected: {
+    borderWidth: 1,
+    borderColor: '#5A71E4',
+    backgroundColor: 'rgba(90, 113, 228, 0.05)',
   },
   chipList: {
     gap: 8,
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
   chip: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: '#FFF',
     borderRadius: 20,
     marginRight: 8,
   },
   chipSelected: {
-    backgroundColor: '#A6C8FF',
+    backgroundColor: '#5A71E4',
   },
   chipText: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: '#666',
+    color: '#8494A9',
   },
   chipTextSelected: {
     color: '#FFF',
   },
   uploadSection: {
-    gap: 12,
+    gap: 16,
   },
   uploadCards: {
     flexDirection: 'row',
@@ -207,37 +319,40 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   uploadCardActive: {
-    backgroundColor: '#A6C8FF15',
+    backgroundColor: 'rgba(90, 113, 228, 0.05)',
+    borderWidth: 1,
+    borderColor: '#5A71E4',
   },
   uploadIcon: {
     width: 48,
     height: 48,
-    backgroundColor: '#A6C8FF15',
-    borderRadius: 12,
+    backgroundColor: 'rgba(90, 113, 228, 0.1)',
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   uploadIconActive: {
-    backgroundColor: '#A6C8FF',
+    backgroundColor: '#5A71E4',
   },
   uploadTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
-    color: '#121826',
+    color: '#222D3A',
   },
   uploadSubtitle: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#666',
+    color: '#8494A9',
   },
   continueButton: {
     height: 56,
-    backgroundColor: '#A6C8FF',
+    backgroundColor: '#5A71E4',
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    marginTop: 12,
   },
   continueButtonText: {
     fontFamily: 'Inter-SemiBold',
