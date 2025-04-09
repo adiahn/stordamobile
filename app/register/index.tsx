@@ -13,18 +13,22 @@ export default function RegisterDevicePage() {
   const [imei, setImei] = useState('');
   const [macAddress, setMacAddress] = useState('');
   const [brand, setBrand] = useState('');
+  const [deviceModel, setDeviceModel] = useState('');
+  const [deviceName, setDeviceName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [deviceDetected, setDeviceDetected] = useState(false);
   
   useEffect(() => {
     // Automatically fetch device brand on load
-    const fetchDeviceBrand = async () => {
+    const fetchDeviceInfo = async () => {
       const brand = Device.manufacturer || '';
+      const model = Device.modelName || '';
       setBrand(brand);
+      setDeviceModel(model);
     };
     
-    fetchDeviceBrand();
+    fetchDeviceInfo();
   }, []);
 
   const handleContinue = () => {
@@ -44,7 +48,8 @@ export default function RegisterDevicePage() {
         imei,
         macAddress,
         brand,
-        detectedName: deviceDetected ? Device.modelName || 'Unknown Model' : '',
+        model: deviceModel,
+        detectedName: deviceDetected ? deviceName : '',
         detectedStorage: deviceDetected ? '128GB' : '',
         detectedColor: deviceDetected ? 'Black' : ''
       }
@@ -57,15 +62,35 @@ export default function RegisterDevicePage() {
     
     try {
       // Get real device information
-      const deviceName = Device.deviceName || '';
+      const detectedDeviceName = Device.deviceName || '';
       const modelName = Device.modelName || 'Unknown Model';
+      const manufacturer = Device.manufacturer || '';
       
-      // Generate a pseudo IMEI (would be replaced with actual API in production)
+      // In a real app, you would use a device API to get the actual IMEI
+      // For demo purposes, we'll generate a pseudo IMEI
       const randomIMEI = Math.floor(100000000000000 + Math.random() * 900000000000000).toString();
       
+      // Generate a realistic-looking MAC address
+      const macDigits = [];
+      for (let i = 0; i < 12; i++) {
+        macDigits.push("0123456789ABCDEF".charAt(Math.floor(Math.random() * 16)));
+      }
+      const formattedMac = 
+        macDigits.slice(0, 2).join('') + ':' + 
+        macDigits.slice(2, 4).join('') + ':' + 
+        macDigits.slice(4, 6).join('') + ':' + 
+        macDigits.slice(6, 8).join('') + ':' + 
+        macDigits.slice(8, 10).join('') + ':' + 
+        macDigits.slice(10, 12).join('');
+      
       setImei(randomIMEI);
-      setBrand(Device.manufacturer || '');
+      setMacAddress(formattedMac);
+      setBrand(manufacturer);
+      setDeviceModel(modelName);
+      setDeviceName(`${manufacturer} ${modelName}`);
       setDeviceDetected(true);
+      
+      // Show success message or toast here if needed
     } catch (err) {
       console.error(err);
       setError('Could not detect device information');
@@ -120,6 +145,16 @@ export default function RegisterDevicePage() {
           </Text>
         </AnimatedPressable>
       </LinearGradient>
+
+      {deviceDetected && (
+        <Animated.View 
+          style={styles.detectedInfoCard}
+          entering={FadeInUp.duration(400)}
+        >
+          <Text style={styles.detectedTitle}>Device Detected</Text>
+          <Text style={styles.detectedName}>{deviceName}</Text>
+        </Animated.View>
+      )}
 
       <View style={styles.formContainer}>
         <View style={styles.inputGroup}>
@@ -251,96 +286,106 @@ const styles = StyleSheet.create({
   infoText: {
     fontFamily: 'Inter-Regular',
     fontSize: 13,
-    color: '#8494A9',
-    lineHeight: 20,
-  },
-  detectButton: {
-    height: 44,
-    backgroundColor: '#5A71E4',
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detectButtonText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 13,
-    color: '#FFF',
+    color: '#222D3A',
+    lineHeight: 18,
   },
   formContainer: {
-    gap: 18,
+    flex: 1,
   },
   inputGroup: {
-    gap: 6,
+    marginBottom: 16,
   },
   label: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Inter-SemiBold',
     fontSize: 13,
     color: '#222D3A',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
   input: {
     flex: 1,
-    height: 46,
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    height: 48,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: '#222D3A',
   },
   inputDetected: {
     borderWidth: 1,
-    borderColor: '#5A71E4',
+    borderColor: 'rgba(90, 113, 228, 0.2)',
     backgroundColor: 'rgba(90, 113, 228, 0.05)',
   },
   scanButton: {
-    width: 46,
-    height: 46,
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: 'absolute',
+    right: 16,
   },
   helper: {
     fontFamily: 'Inter-Regular',
-    fontSize: 11,
+    fontSize: 12,
     color: '#8494A9',
     marginTop: 4,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     marginTop: 6,
-    backgroundColor: 'rgba(228, 90, 90, 0.1)',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
   },
   errorText: {
     fontFamily: 'Inter-Regular',
-    fontSize: 11,
+    fontSize: 12,
     color: '#E45A5A',
+    marginLeft: 6,
   },
   continueButton: {
-    height: 50,
+    height: 48,
     backgroundColor: '#5A71E4',
-    borderRadius: 14,
+    borderRadius: 12,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 12,
+    alignItems: 'center',
+    marginTop: 16,
   },
   continueButtonText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 15,
-    color: '#FFF',
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginRight: 8,
+  },
+  detectButton: {
+    height: 42,
+    backgroundColor: '#5A71E4',
+    borderRadius: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detectButtonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  detectedInfoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#30B050',
+  },
+  detectedTitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: '#30B050',
+    marginBottom: 4,
+  },
+  detectedName: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#222D3A',
   },
 });

@@ -1,10 +1,30 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+
+const PAYMENT_METHODS = [
+  {
+    id: 1,
+    type: 'card',
+    name: 'Mastercard',
+    number: '•••• 4582',
+    icon: 'credit-card',
+    color: '#222D3A',
+  },
+  {
+    id: 2,
+    type: 'bank',
+    name: 'First Bank',
+    number: '•••• 7290',
+    icon: 'home',
+    color: '#E45A5A',
+  },
+];
 
 const TRANSACTIONS = [
   {
@@ -38,6 +58,9 @@ const TRANSACTIONS = [
 ];
 
 export default function WalletScreen() {
+  const [showAll, setShowAll] = useState(false);
+  const transactions = showAll ? TRANSACTIONS : TRANSACTIONS.slice(0, 3);
+
   return (
     <ScrollView 
       style={styles.container} 
@@ -81,8 +104,47 @@ export default function WalletScreen() {
       </AnimatedLinearGradient>
 
       <Animated.View 
-        style={styles.quickActionsContainer}
+        style={styles.paymentMethodsContainer}
         entering={FadeInUp.duration(500).delay(300)}
+      >
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Payment Methods</Text>
+          <TouchableOpacity style={styles.addButton}>
+            <Feather name="plus" size={16} color="#5A71E4" />
+            <Text style={styles.addButtonText}>Add</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.cardsContainer}
+        >
+          {PAYMENT_METHODS.map((method) => (
+            <View key={method.id} style={styles.cardItem}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.cardIconContainer, { backgroundColor: method.color }]}>
+                  <Feather name={method.icon as any} size={16} color="#FFF" />
+                </View>
+                <Feather name="more-vertical" size={18} color="#8494A9" />
+              </View>
+              <Text style={styles.cardName}>{method.name}</Text>
+              <Text style={styles.cardNumber}>{method.number}</Text>
+            </View>
+          ))}
+          
+          <TouchableOpacity style={styles.addCardButton}>
+            <View style={styles.addCardPlus}>
+              <Feather name="plus" size={24} color="#5A71E4" />
+            </View>
+            <Text style={styles.addCardText}>Add Payment Method</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </Animated.View>
+
+      <Animated.View 
+        style={styles.quickActionsContainer}
+        entering={FadeInUp.duration(500).delay(400)}
       >
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         
@@ -112,47 +174,52 @@ export default function WalletScreen() {
 
       <Animated.View 
         style={styles.transactionsContainer}
-        entering={FadeInUp.duration(500).delay(400)}
+        entering={FadeInUp.duration(500).delay(500)}
       >
         <View style={styles.transactionsHeader}>
           <Text style={styles.sectionTitle}>Transactions</Text>
-          <AnimatedPressable style={styles.viewAllButton}>
-            <Text style={styles.viewAllText}>View All</Text>
+          <AnimatedPressable 
+            style={styles.viewAllButton}
+            onPress={() => setShowAll(!showAll)}
+          >
+            <Text style={styles.viewAllText}>{showAll ? 'Show Less' : 'View All'}</Text>
           </AnimatedPressable>
         </View>
         
-        {TRANSACTIONS.map((transaction, index) => (
-          <AnimatedPressable 
-            key={transaction.id} 
-            style={styles.transactionItem}
-            entering={FadeInUp.duration(300).delay(500 + index * 100)}
-          >
-            <View style={[
-              styles.transactionIconContainer,
-              transaction.type === 'credit' 
-                ? styles.creditIconContainer 
-                : styles.debitIconContainer
-            ]}>
-              <Feather 
-                name={transaction.type === 'credit' ? 'arrow-down-left' : 'arrow-up-right'} 
-                size={18} 
-                color={transaction.type === 'credit' ? '#30B050' : '#E45A5A'} 
-              />
-            </View>
-            
-            <View style={styles.transactionDetails}>
-              <Text style={styles.transactionDescription}>{transaction.description}</Text>
-              <Text style={styles.transactionDate}>{transaction.date}</Text>
-            </View>
-            
-            <Text style={[
-              styles.transactionAmount,
-              transaction.type === 'credit' ? styles.creditAmount : styles.debitAmount
-            ]}>
-              {transaction.type === 'credit' ? '+' : '-'}{transaction.amount}
-            </Text>
-          </AnimatedPressable>
-        ))}
+        <View style={styles.transactionsList}>
+          {transactions.map((transaction, index) => (
+            <AnimatedPressable 
+              key={transaction.id} 
+              style={styles.transactionItem}
+              entering={FadeInUp.duration(300).delay(600 + index * 100)}
+            >
+              <View style={[
+                styles.transactionIconContainer,
+                transaction.type === 'credit' 
+                  ? styles.creditIconContainer 
+                  : styles.debitIconContainer
+              ]}>
+                <Feather 
+                  name={transaction.type === 'credit' ? 'arrow-down-left' : 'arrow-up-right'} 
+                  size={18} 
+                  color={transaction.type === 'credit' ? '#30B050' : '#E45A5A'} 
+                />
+              </View>
+              
+              <View style={styles.transactionDetails}>
+                <Text style={styles.transactionDescription}>{transaction.description}</Text>
+                <Text style={styles.transactionDate}>{transaction.date}</Text>
+              </View>
+              
+              <Text style={[
+                styles.transactionAmount,
+                transaction.type === 'credit' ? styles.creditAmount : styles.debitAmount
+              ]}>
+                {transaction.type === 'credit' ? '+' : '-'}{transaction.amount}
+              </Text>
+            </AnimatedPressable>
+          ))}
+        </View>
       </Animated.View>
     </ScrollView>
   );
@@ -164,48 +231,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FB',
   },
   content: {
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 100,
+    padding: 16,
+    paddingTop: 50,
+    paddingBottom: 80,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   headerTitle: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 28,
+    fontSize: 26,
     color: '#222D3A',
   },
   balanceCard: {
-    borderRadius: 24,
+    borderRadius: 16,
     marginBottom: 24,
     ...Platform.select({
       ios: {
         shadowColor: '#8C3BFF',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.25,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 8,
+        elevation: 6,
       },
     }),
   },
   balanceContent: {
-    padding: 24,
+    padding: 20,
     alignItems: 'center',
   },
   balanceLabel: {
     fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   balanceAmount: {
     fontFamily: 'Inter-Bold',
-    fontSize: 40,
+    fontSize: 36,
     color: '#FFFFFF',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   balanceActions: {
     flexDirection: 'row',
@@ -214,59 +281,92 @@ const styles = StyleSheet.create({
   },
   balanceActionButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 12,
+    padding: 10,
     alignItems: 'center',
-    minWidth: 100,
+    minWidth: 90,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   actionIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   actionButtonText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
   },
-  quickActionsContainer: {
+  paymentMethodsContainer: {
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
-    color: '#222D3A',
-    marginBottom: 16,
-  },
-  quickActions: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  quickActionButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
     alignItems: 'center',
-    width: '31%',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    marginBottom: 12,
   },
-  quickActionIcon: {
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: '#5A71E4',
+    marginLeft: 4,
+  },
+  cardsContainer: {
+    paddingRight: 16,
+  },
+  cardItem: {
+    width: 150,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardName: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#222D3A',
+    marginBottom: 4,
+  },
+  cardNumber: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#8494A9',
+  },
+  addCardButton: {
+    width: 150,
+    backgroundColor: 'rgba(90, 113, 228, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(90, 113, 228, 0.3)',
+  },
+  addCardPlus: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -275,13 +375,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  addCardText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: '#5A71E4',
+    textAlign: 'center',
+  },
+  quickActionsContainer: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: '#222D3A',
+    marginBottom: 12,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  quickActionButton: {
+    width: '31%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+  },
+  quickActionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(90, 113, 228, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   quickActionText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
   },
   transactionsContainer: {
-    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
   },
   transactionsHeader: {
     flexDirection: 'row',
@@ -290,42 +427,32 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   viewAllButton: {
-    padding: 8,
-    backgroundColor: 'rgba(90, 113, 228, 0.1)',
-    borderRadius: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   viewAllText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#5A71E4',
+  },
+  transactionsList: {
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   transactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(132, 148, 169, 0.1)',
   },
   transactionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   creditIconContainer: {
     backgroundColor: 'rgba(48, 176, 80, 0.1)',
@@ -338,9 +465,9 @@ const styles = StyleSheet.create({
   },
   transactionDescription: {
     fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 14,
     color: '#222D3A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   transactionDate: {
     fontFamily: 'Inter-Regular',
@@ -348,8 +475,8 @@ const styles = StyleSheet.create({
     color: '#8494A9',
   },
   transactionAmount: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    fontSize: 14,
   },
   creditAmount: {
     color: '#30B050',
