@@ -17,7 +17,7 @@ export default function DeviceDetailsPage() {
   
   const [model, setModel] = useState(params.detectedName as string || '');
   const [storage, setStorage] = useState(params.detectedStorage as string || '');
-  const [color, setColor] = useState(params.detectedColor as string || '');
+  const [color, setColor] = useState('');
   const [hasReceipt, setHasReceipt] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
   const [isPreFilled, setIsPreFilled] = useState(false);
@@ -25,7 +25,7 @@ export default function DeviceDetailsPage() {
 
   useEffect(() => {
     // Check if we have detected information
-    if (params.detectedName || params.detectedStorage || params.detectedColor) {
+    if (params.detectedName || params.detectedStorage) {
       setIsPreFilled(true);
     }
 
@@ -159,10 +159,7 @@ export default function DeviceDetailsPage() {
         </View>
 
         <View style={styles.inputGroup}>
-          <View style={styles.labelRow}>
-            <Text style={styles.label}>Device Color</Text>
-            {isPreFilled && color && <Text style={styles.autoFilled}>Auto-detected</Text>}
-          </View>
+          <Text style={styles.label}>Device Color</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -172,16 +169,13 @@ export default function DeviceDetailsPage() {
                 key={option}
                 style={[
                   styles.chip,
-                  color === option && styles.chipSelected,
-                  isPreFilled && color && option !== color && styles.chipDisabled
+                  color === option && styles.chipSelected
                 ]}
-                onPress={() => !isPreFilled && setColor(option)}
-                disabled={isPreFilled && !!color}>
+                onPress={() => setColor(option)}>
                 <Text
                   style={[
                     styles.chipText,
-                    color === option && styles.chipTextSelected,
-                    isPreFilled && color && option !== color && styles.chipTextDisabled
+                    color === option && styles.chipTextSelected
                   ]}>
                   {option}
                 </Text>

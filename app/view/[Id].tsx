@@ -1,5 +1,5 @@
 import { useLocalSearchParams, router } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { useDeviceStore } from '../store/store';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,11 +8,20 @@ import { useState } from 'react';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+// PIN for authentication
+const USER_PIN = "1234"; // This would be stored securely in a real app
+
 export default function DeviceDetailsScreen() {
   const params = useLocalSearchParams();
   const storeDevices = useDeviceStore((state) => state.devices) || [];
   const [isExpanded, setIsExpanded] = useState(false);
   const storeDevice = useDeviceStore((state) => state.selectedDevice);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState('');
+  const [selectedAction, setSelectedAction] = useState<{
+    type: 'transfer' | 'remove' | 'report';
+    reportType?: 'lost' | 'stolen';
+  } | null>(null);
 
   // Use the device from store, or fallback to params
   const device = storeDevice || {
@@ -28,8 +37,52 @@ export default function DeviceDetailsScreen() {
     status: 'active'
   };
 
-  const handleDeleteDevice = () => {
-    if (device.status === 'transferred') {
+  const handlePinSubmit = () => {
+    if (pin === USER_PIN) {
+      setShowPinModal(false);
+      setPin('');
+
+      if (!selectedAction) return;
+
+      if (selectedAction.type === 'transfer') {
+        // Navigate to transfer screen after PIN verification
+        useDeviceStore.getState().setSelectedDevice(device);
+        router.push('/devices/dev_1');
+      } else if (selectedAction.type === 'remove') {
+        // Remove device after PIN verification
+        if (device.key) {
+          useDeviceStore.getState().removeDevice(device.key);
+        }
+        router.back();
+        router.push('/(tabs)');
+      } else if (selectedAction.type === 'report' && selectedAction.reportType) {
+        // Report device after PIN verification
+        updateDeviceStatus(selectedAction.reportType);
+        Alert.alert(
+          "Device Reported", 
+          selectedAction.reportType === 'lost'
+            ? "Your device has been reported as lost. We'll notify you if it's found."
+            : "Your device has been reported as stolen. Law enforcement has been notified."
+        );
+      }
+    } else {
+      Alert.alert("Invalid PIN", "The PIN you entered is incorrect. Please try again.");
+    }
+  };
+
+  const initiateAction = (type: 'transfer' | 'remove' | 'report', reportType?: 'lost' | 'stolen') => {
+    if (type === 'transfer' && (device.status === 'lost' || device.status === 'stolen' || device.status === 'transferred')) {
+      Alert.alert(
+        "Cannot Transfer Device",
+        device.status === 'transferred'
+          ? "This device has already been transferred."
+          : "You cannot transfer a device that has been reported as lost or stolen.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    if (type === 'remove' && device.status === 'transferred') {
       Alert.alert(
         "Cannot Remove Device",
         "This device has been transferred to another user and cannot be removed from your history.",
@@ -37,7 +90,12 @@ export default function DeviceDetailsScreen() {
       );
       return;
     }
-    
+
+    setSelectedAction({ type, reportType });
+    setShowPinModal(true);
+  };
+
+  const handleDeleteDevice = () => {
     Alert.alert(
       "Remove Device",
       "Are you sure you want to remove this device from your account? This action cannot be undone.",
@@ -48,15 +106,7 @@ export default function DeviceDetailsScreen() {
         },
         { 
           text: "Remove", 
-          onPress: () => {
-            if (device.key) {
-              // Use the new removeDevice function
-              useDeviceStore.getState().removeDevice(device.key);
-            }
-            
-            router.back();
-            router.push('/(tabs)');
-          },
+          onPress: () => initiateAction('remove'),
           style: "destructive"
         }
       ]
@@ -64,21 +114,7 @@ export default function DeviceDetailsScreen() {
   };
 
   const handleTransferDevice = () => {
-    if (device.status === 'lost' || device.status === 'stolen' || device.status === 'transferred') {
-      Alert.alert(
-        "Cannot Transfer Device",
-        device.status === 'transferred'
-          ? "This device has already been transferred."
-          : "You cannot transfer a device that has been reported as lost or stolen.",
-        [{ text: "OK" }]
-      );
-      return;
-    }
-    
-    // Set selected device in store first
-    useDeviceStore.getState().setSelectedDevice(device);
-    // Navigate to transfer screen 
-    router.push('/devices/dev_1');
+    initiateAction('transfer');
   };
 
   const handleReportDevice = () => {
@@ -92,17 +128,11 @@ export default function DeviceDetailsScreen() {
         },
         { 
           text: "Lost", 
-          onPress: () => {
-            updateDeviceStatus('lost');
-            Alert.alert("Device Reported", "Your device has been reported as lost. We'll notify you if it's found.");
-          }
+          onPress: () => initiateAction('report', 'lost')
         },
         { 
           text: "Stolen", 
-          onPress: () => {
-            updateDeviceStatus('stolen');
-            Alert.alert("Device Reported", "Your device has been reported as stolen. Law enforcement has been notified.");
-          }
+          onPress: () => initiateAction('report', 'stolen')
         }
       ]
     );
@@ -251,90 +281,120 @@ export default function DeviceDetailsScreen() {
                 <>
                   <View style={styles.divider} />
                   <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Registered</Text>
+                    <Text style={styles.detailLabel}>Registration Date</Text>
                     <Text style={styles.detailValue}>
                       {new Date(device.registrationDate).toLocaleDateString('en-US', {
                         year: 'numeric',
-                        month: 'short',
+                        month: 'long',
                         day: 'numeric'
                       })}
                     </Text>
                   </View>
                 </>
               )}
-              
-              <View style={styles.divider} />
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Status</Text>
-                <View style={[
-                  styles.statusChip, 
-                  device.status === 'lost' || device.status === 'stolen' 
-                    ? styles.reportedChip 
-                    : device.ownership ? styles.ownedChip : styles.unownedChip
-                ]}>
-                  <Text style={[
-                    styles.statusChipText,
-                    device.status === 'lost' || device.status === 'stolen' 
-                      ? styles.reportedChipText 
-                      : device.ownership ? styles.ownedChipText : styles.unownedChipText
-                  ]}>
-                    {getStatusText()}
-                  </Text>
-                </View>
-              </View>
             </>
           )}
         </View>
       </Animated.View>
-      
-      <Animated.View 
+
+      <Animated.View
         style={styles.actionsContainer}
         entering={FadeInUp.duration(500).delay(300)}
       >
-        <Text style={styles.sectionTitle}>Actions</Text>
-        
-        <View style={styles.actionsRow}>
-          <AnimatedPressable 
-            style={styles.actionButton}
-            onPress={handleTransferDevice}
-            disabled={device.status === 'lost' || device.status === 'stolen'}
-          >
-            <View style={[styles.actionIcon, styles.primaryAction, 
-              (device.status === 'lost' || device.status === 'stolen') && styles.disabledAction]}>
-              <Feather name="refresh-cw" size={16} color="#FFF" />
-            </View>
-            <Text style={[styles.actionText, 
-              (device.status === 'lost' || device.status === 'stolen') && styles.disabledText]}>
-              Transfer
-            </Text>
-          </AnimatedPressable>
+        <View style={styles.actionRow}>
+          {(device.status !== 'transferred' && device.ownership) && (
+            <AnimatedPressable
+              onPress={handleReportDevice}
+              style={styles.actionButton}
+            >
+              <View style={[styles.actionIcon, styles.reportIcon]}>
+                <Feather name="alert-triangle" size={16} color="#FF9A00" />
+              </View>
+              <Text style={styles.actionText}>Report</Text>
+            </AnimatedPressable>
+          )}
           
-          <AnimatedPressable 
-            style={styles.actionButton}
-            onPress={handleReportDevice}
-            disabled={device.status === 'lost' || device.status === 'stolen'}
-          >
-            <View style={[styles.actionIcon, styles.secondaryAction,
-              (device.status === 'lost' || device.status === 'stolen') && styles.disabledAction]}>
-              <Feather name="flag" size={16} color="#FFF" />
-            </View>
-            <Text style={[styles.actionText,
-              (device.status === 'lost' || device.status === 'stolen') && styles.disabledText]}>
-              Report
-            </Text>
-          </AnimatedPressable>
+          {(device.status !== 'transferred' && device.ownership) && (
+            <AnimatedPressable
+              onPress={handleTransferDevice}
+              style={styles.actionButton}
+            >
+              <View style={[styles.actionIcon, styles.transferIcon]}>
+                <Feather name="send" size={16} color="#5A71E4" />
+              </View>
+              <Text style={styles.actionText}>Transfer</Text>
+            </AnimatedPressable>
+          )}
           
-          <AnimatedPressable 
-            style={styles.actionButton}
+          <AnimatedPressable
             onPress={handleDeleteDevice}
+            style={styles.actionButton}
           >
-            <View style={[styles.actionIcon, styles.dangerAction]}>
-              <Feather name="trash-2" size={16} color="#FFF" />
+            <View style={[styles.actionIcon, styles.deleteIcon]}>
+              <Feather name="trash-2" size={16} color="#E45A5A" />
             </View>
             <Text style={styles.actionText}>Remove</Text>
           </AnimatedPressable>
         </View>
       </Animated.View>
+
+      {/* PIN Authentication Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showPinModal}
+        onRequestClose={() => {
+          setShowPinModal(false);
+          setPin('');
+          setSelectedAction(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pinModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Enter PIN</Text>
+              <Pressable 
+                onPress={() => {
+                  setShowPinModal(false);
+                  setPin('');
+                  setSelectedAction(null);
+                }}
+              >
+                <Feather name="x" size={20} color="#222D3A" />
+              </Pressable>
+            </View>
+            
+            <Text style={styles.pinDescription}>
+              {selectedAction?.type === 'transfer' ? 'Please enter your PIN to transfer this device' :
+               selectedAction?.type === 'remove' ? 'Please enter your PIN to remove this device' :
+               selectedAction?.type === 'report' && selectedAction?.reportType === 'lost' ? 'Please enter your PIN to report this device as lost' :
+               selectedAction?.type === 'report' && selectedAction?.reportType === 'stolen' ? 'Please enter your PIN to report this device as stolen' :
+               'Please enter your PIN to continue'}
+            </Text>
+            
+            <TextInput
+              style={styles.pinInput}
+              value={pin}
+              onChangeText={setPin}
+              placeholder="Enter 4-digit PIN"
+              keyboardType="number-pad"
+              maxLength={4}
+              secureTextEntry
+              placeholderTextColor="#8494A9"
+            />
+            
+            <Pressable 
+              style={[styles.pinSubmitButton, pin.length === 4 && styles.pinSubmitButtonActive]}
+              onPress={handlePinSubmit}
+              disabled={pin.length !== 4}
+            >
+              <Text style={[styles.pinSubmitText, pin.length === 4 && styles.pinSubmitTextActive]}>
+                Verify
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -345,138 +405,113 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FB',
   },
   contentContainer: {
-    padding: 14,
-    paddingTop: 45,
-    paddingBottom: 20,
+    padding: 20,
+    paddingBottom: 30,
   },
   header: {
-    marginBottom: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
   backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   deviceCard: {
-    borderRadius: 14,
+    marginBottom: 20,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 14,
   },
   deviceGradient: {
-    padding: 16,
+    padding: 20,
     alignItems: 'center',
   },
   deviceIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   deviceName: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 18,
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 20,
     color: '#FFFFFF',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   deviceStatus: {
-    flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   statusBadge: {
-    paddingVertical: 4,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 14,
+    borderRadius: 6,
   },
   statusText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Inter-SemiBold',
     fontSize: 12,
     color: '#FFFFFF',
   },
   detailsContainer: {
-    marginBottom: 14,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: '#222D3A',
   },
   expandButton: {
     padding: 4,
   },
-  sectionTitle: {
+  detailCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+  },
+  detailItem: {
+    paddingVertical: 10,
+  },
+  detailLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#8494A9',
+    marginBottom: 4,
+  },
+  detailValue: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: '#222D3A',
   },
-  detailCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-  },
-  detailItem: {
-    paddingVertical: 6,
-  },
-  detailLabel: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
-    color: '#8494A9',
-    marginBottom: 3,
-  },
-  detailValue: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 13,
-    color: '#222D3A',
-  },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(132, 148, 169, 0.15)',
-  },
-  statusChip: {
-    alignSelf: 'flex-start',
-    borderRadius: 10,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    marginTop: 2,
-  },
-  ownedChip: {
-    backgroundColor: 'rgba(90, 228, 126, 0.1)',
-  },
-  unownedChip: {
-    backgroundColor: 'rgba(228, 90, 90, 0.1)',
-  },
-  reportedChip: {
-    backgroundColor: 'rgba(255, 173, 51, 0.1)',
-  },
-  statusChipText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 10,
-  },
-  ownedChipText: {
-    color: '#30B050',
-  },
-  unownedChipText: {
-    color: '#E45A5A',
-  },
-  reportedChipText: {
-    color: '#FF9A00',
+    backgroundColor: 'rgba(132, 148, 169, 0.1)',
   },
   actionsContainer: {
-    marginBottom: 14,
+    marginBottom: 20,
   },
-  actionsRow: {
+  actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    flexWrap: 'wrap',
   },
   actionButton: {
-    width: '30%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    width: '31%',
+    paddingVertical: 16,
     alignItems: 'center',
   },
   actionIcon: {
@@ -485,26 +520,78 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  primaryAction: {
-    backgroundColor: '#5A71E4',
+  reportIcon: {
+    backgroundColor: 'rgba(255, 154, 0, 0.1)',
   },
-  secondaryAction: {
-    backgroundColor: '#5E5EBF',
+  transferIcon: {
+    backgroundColor: 'rgba(90, 113, 228, 0.1)',
   },
-  dangerAction: {
-    backgroundColor: '#E45A5A',
-  },
-  disabledAction: {
-    backgroundColor: '#CCCCCC',
+  deleteIcon: {
+    backgroundColor: 'rgba(228, 90, 90, 0.1)',
   },
   actionText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 14,
     color: '#222D3A',
   },
-  disabledText: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  pinModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    paddingBottom: 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 18,
+    color: '#222D3A',
+  },
+  pinDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
     color: '#8494A9',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  pinInput: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 18,
+    marginBottom: 16,
+    textAlign: 'center',
+    letterSpacing: 6,
+    fontFamily: 'Inter-Bold',
+  },
+  pinSubmitButton: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  pinSubmitButtonActive: {
+    backgroundColor: '#5A71E4',
+  },
+  pinSubmitText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: '#8494A9',
+  },
+  pinSubmitTextActive: {
+    color: '#FFFFFF',
   },
 });

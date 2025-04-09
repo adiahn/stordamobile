@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useDeviceStore, Device as StoreDevice } from '../store/store';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Modal, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp, FadeInRight } from 'react-native-reanimated';
@@ -27,17 +27,26 @@ interface Device {
 
 // User profile information
 const USER_PROFILE = {
-  name: "Adnan Muhammad Mukhtar",
-  email: "adnan@storda.ng",
+  name: "John Doe",
+  email: "john@storda.ng",
   phone: "+2347011313752",
   country: "Nigeria"
 };
+
+// PIN for authentication
+const USER_PIN = "1234"; // This would be stored securely in a real app
 
 export default function HomeScreen() {
   const router = useRouter();
   const storeDevices = useDeviceStore((state) => state.devices);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
   const [showAllDevices, setShowAllDevices] = useState(false);
+  const [pin, setPin] = useState('');
+  const [selectedDeviceAction, setSelectedDeviceAction] = useState<{
+    type: 'transfer' | 'remove' | 'report';
+    device?: Device;
+  } | null>(null);
   
   // Combine store devices with the initial hardcoded ones if needed
   const [devices, setDevices] = useState<Device[]>([
@@ -48,42 +57,17 @@ export default function HomeScreen() {
       id: 'SRD-21112',
       ownership: true,
       key: 1,
-      status: 'active'
-    },
-    {
-      name: 'iPhone 11 Pro',
-      imei: '3121321122112',
-      id: 'SRD-21112',
-      macAddress: '30291masmdsdmas',
-      ownership: false,
-      key: 2,
-      status: 'active'
+      status: 'active',
+      storage: '128GB',
+      color: 'Sierra Blue'
     },
     {
       name: 'Samsung Z Fold 3',
       imei: '3121321122112',
       id: 'SRD-21112',
-      macAddress: '30291masmasdmas',
+      macAddress: '30291masmdsdmas',
       ownership: false,
       key: 3,
-      status: 'active'
-    },
-    {
-      name: 'Google Pixel 6',
-      imei: '3121321122112',
-      id: 'SRD-21113',
-      macAddress: '30291masmasdmas',
-      ownership: true,
-      key: 4,
-      status: 'active'
-    },
-    {
-      name: 'OnePlus 9 Pro',
-      imei: '3121321122112',
-      id: 'SRD-21114',
-      macAddress: '30291masmasdmas',
-      ownership: true,
-      key: 5,
       status: 'active'
     },
   ]);
@@ -119,6 +103,43 @@ export default function HomeScreen() {
     }
   }, [storeDevices]);
 
+  const handlePinSubmit = () => {
+    if (pin === USER_PIN) {
+      setShowPinModal(false);
+      setPin('');
+
+      if (!selectedDeviceAction) return;
+
+      if (selectedDeviceAction.type === 'transfer' && selectedDeviceAction.device) {
+        handleTransferDevice(selectedDeviceAction.device);
+      } else if (selectedDeviceAction.type === 'remove' && selectedDeviceAction.device) {
+        // Handle device removal
+        const updatedDevices = devices.filter(d => d.key !== selectedDeviceAction.device?.key);
+        setDevices(updatedDevices);
+        
+        // Also remove from store if present
+        if (useDeviceStore.getState().removeDevice) {
+          useDeviceStore.getState().removeDevice(selectedDeviceAction.device.key);
+        }
+        
+        Alert.alert("Device Removed", "The device has been removed successfully.");
+      } else if (selectedDeviceAction.type === 'report' && selectedDeviceAction.device) {
+        // Navigate to report page
+        router.push({
+          pathname: '/view/[Id]',
+          params: { Id: selectedDeviceAction.device.id }
+        });
+      }
+    } else {
+      Alert.alert("Invalid PIN", "The PIN you entered is incorrect. Please try again.");
+    }
+  };
+
+  const initiateAction = (type: 'transfer' | 'remove' | 'report', device?: Device) => {
+    setSelectedDeviceAction({ type, device });
+    setShowPinModal(true);
+  };
+
   const handleTransferDevice = (device: Device) => {
     // Convert local Device to StoreDevice for the store
     const storeDevice: StoreDevice = {
@@ -150,149 +171,181 @@ export default function HomeScreen() {
   ).length;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Good morning,</Text>
-        <Text style={styles.name}>{USER_PROFILE.name.split(' ')[0]}</Text>
-      </View>
-
-      <LinearGradient
-        colors={['#5A71E4', '#8C3BFF']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.statsCard}
+    <View style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.statsContent}>
-          <View style={styles.iconCircle}>
-            <Feather name="shield" size={20} color="#fff" />
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Hello,</Text>
+          <Text style={styles.name}>{USER_PROFILE.name.split(' ')[0]}</Text>
+        </View>
+
+        <LinearGradient
+          colors={['#5A71E4', '#8C3BFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.statsCard}
+        >
+          <View style={styles.statsContent}>
+            <View style={styles.statsRow}>
+              <View style={styles.iconCircle}>
+                <Feather name="shield" size={20} color="#fff" />
+              </View>
+              <View style={styles.statsTextContainer}>
+                <Text style={styles.statsTitle}>Storda Protection</Text>
+                <View style={styles.statsInfoRow}>
+                  <Text style={styles.statsNumber}>{activeDeviceCount}</Text>
+                  <Text style={styles.statsSubtitle}>Devices Protected</Text>
+                </View>
+              </View>
+            </View>
           </View>
-          <Text style={styles.statsTitle}>Storda Protection</Text>
-          <Text style={styles.statsNumber}>{activeDeviceCount}</Text>
-          <Text style={styles.statsSubtitle}>Devices Protected</Text>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
 
-      <View style={styles.actionsContainer}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.actionsContainer}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
 
-        <View style={styles.actionButtons}>
-          <Pressable
-            onPress={() => setShowTransferModal(true)}
-            style={[styles.actionButton]}
-          >
-            <View style={styles.actionIconContainer}>
-              <Feather name="send" size={16} color="#5A71E4" />
-            </View>
-            <Text style={styles.actionButtonText}>Transfer Device</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              router.push(`/register`);
-            }}
-            style={[styles.actionButton]}
-          >
-            <View style={styles.actionIconContainer}>
-              <Feather name="plus" size={16} color="#5A71E4" />
-            </View>
-            <Text style={styles.actionButtonText}>Add Device</Text>
-          </Pressable>
-          
-          <Pressable
-            onPress={() => router.push('/devices')}
-            style={[styles.actionButton]}
-          >
-            <View style={styles.actionIconContainer}>
-              <Feather name="smartphone" size={16} color="#5A71E4" />
-            </View>
-            <Text style={styles.actionButtonText}>View Devices</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.devicesContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Your Devices</Text>
-          {hasMoreDevices && (
-            <Pressable 
-              style={styles.seeAllButton}
-              onPress={() => setShowAllDevices(!showAllDevices)}
+          <View style={styles.actionButtons}>
+            <Pressable
+              onPress={() => initiateAction('transfer')}
+              style={[styles.actionButton]}
             >
-              <Text style={styles.seeAll}>
-                {showAllDevices ? 'Show less' : 'See all'}
-              </Text>
+              <View style={styles.actionIconContainer}>
+                <Feather name="send" size={16} color="#5A71E4" />
+              </View>
+              <Text style={styles.actionButtonText}>Transfer</Text>
             </Pressable>
-          )}
+
+            <Pressable
+              onPress={() => {
+                router.push(`/register`);
+              }}
+              style={[styles.actionButton]}
+            >
+              <View style={styles.actionIconContainer}>
+                <Feather name="plus" size={16} color="#5A71E4" />
+              </View>
+              <Text style={styles.actionButtonText}>Add</Text>
+            </Pressable>
+            
+            <Pressable
+              onPress={() => router.push('/devices')}
+              style={[styles.actionButton]}
+            >
+              <View style={styles.actionIconContainer}>
+                <Feather name="smartphone" size={16} color="#5A71E4" />
+              </View>
+              <Text style={styles.actionButtonText}>View All</Text>
+            </Pressable>
+            
+            <Pressable
+              onPress={() => initiateAction('report')}
+              style={[styles.actionButton]}
+            >
+              <View style={styles.actionIconContainer}>
+                <Feather name="alert-triangle" size={16} color="#5A71E4" />
+              </View>
+              <Text style={styles.actionButtonText}>Report</Text>
+            </Pressable>
+          </View>
         </View>
-        
-        {displayDevices.map((device) => (
-          <Pressable
-            key={device.key}
-            style={styles.deviceCard}
-            onPress={() => {
-              // Convert to StoreDevice before setting in store
-              const storeDevice: StoreDevice = {
-                name: device.name,
-                imei: device.imei,
-                macAddress: device.macAddress,
-                id: device.id,
-                key: device.key,
-                ownership: device.ownership,
-                storage: device.storage,
-                color: device.color,
-                brand: device.brand,
-                registrationDate: device.registrationDate,
-                status: device.status
-              };
-              
-              useDeviceStore.getState().setSelectedDevice(storeDevice);
-              router.push({
-                pathname: '/view/[Id]',
-                params: { Id: device.id },
-              });
-            }}
-          >
-            <View style={styles.deviceCardContent}>
-              <View style={styles.deviceCardLeft}>
-                <View style={styles.deviceTypeIcon}>
-                  <Feather name="smartphone" size={12} color="#5A71E4" />
+
+        <View style={styles.devicesContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Your Devices</Text>
+            {hasMoreDevices && (
+              <Pressable 
+                style={styles.seeAllButton}
+                onPress={() => setShowAllDevices(!showAllDevices)}
+              >
+                <Text style={styles.seeAll}>
+                  {showAllDevices ? 'Show less' : 'See all'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+          
+          {displayDevices.map((device) => (
+            <Pressable
+              key={device.key}
+              style={styles.deviceCard}
+              onPress={() => {
+                // Convert to StoreDevice before setting in store
+                const storeDevice: StoreDevice = {
+                  name: device.name,
+                  imei: device.imei,
+                  macAddress: device.macAddress,
+                  id: device.id,
+                  key: device.key,
+                  ownership: device.ownership,
+                  storage: device.storage,
+                  color: device.color,
+                  brand: device.brand,
+                  registrationDate: device.registrationDate,
+                  status: device.status
+                };
+                
+                useDeviceStore.getState().setSelectedDevice(storeDevice);
+                router.push({
+                  pathname: '/view/[Id]',
+                  params: { Id: device.id },
+                });
+              }}
+            >
+              <View style={styles.deviceCardContent}>
+                <View style={styles.deviceCardLeft}>
+                  <View style={styles.deviceTypeIcon}>
+                    <Feather name="smartphone" size={12} color="#5A71E4" />
+                  </View>
+                  <View style={styles.deviceInfo}>
+                    <Text style={styles.deviceName} numberOfLines={1}>{device.name}</Text>
+                    <View style={styles.deviceDetailRow}>
+                      <Text style={styles.deviceId}>{device.id}</Text>
+                      {device.storage && <Text style={styles.deviceDetail}>{device.storage}</Text>}
+                      {device.color && <Text style={styles.deviceDetail}>{device.color}</Text>}
+                    </View>
+                  </View>
                 </View>
-                <View style={styles.deviceInfo}>
-                  <Text style={styles.deviceName}>{device.name}</Text>
-                  <Text style={styles.deviceId}>{device.id}</Text>
+                <View style={styles.deviceCardRight}>
+                  <View
+                    style={[
+                      styles.deviceBadge,
+                      device.status === 'lost' || device.status === 'stolen' 
+                        ? styles.reportedBadge 
+                        : device.status === 'transferred'
+                        ? styles.transferredBadge
+                        : device.ownership ? styles.ownedBadge : styles.unownedBadge,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.deviceBadgeText,
+                      device.status === 'lost' || device.status === 'stolen' 
+                        ? styles.reportedText 
+                        : device.status === 'transferred'
+                        ? styles.transferredText
+                        : device.ownership ? styles.ownedText : styles.unownedText,
+                    ]}>
+                      {device.status === 'lost' ? 'Lost' : 
+                       device.status === 'stolen' ? 'Stolen' :
+                       device.status === 'transferred' ? 'Transferred' :
+                       device.ownership ? 'Owned' : 'Unowned'}
+                    </Text>
+                  </View>
+                  <Pressable 
+                    onPress={() => initiateAction('remove', device)}
+                    style={styles.removeButton}
+                    hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                  >
+                    <Feather name="trash-2" size={14} color="#E45A5A" />
+                  </Pressable>
                 </View>
               </View>
-              <View style={styles.deviceCardRight}>
-                <View
-                  style={[
-                    styles.deviceBadge,
-                    device.status === 'lost' || device.status === 'stolen' 
-                      ? styles.reportedBadge 
-                      : device.status === 'transferred'
-                      ? styles.transferredBadge
-                      : device.ownership ? styles.ownedBadge : styles.unownedBadge,
-                  ]}
-                >
-                  <Text style={[
-                    styles.deviceBadgeText,
-                    device.status === 'lost' || device.status === 'stolen' 
-                      ? styles.reportedText 
-                      : device.status === 'transferred'
-                      ? styles.transferredText
-                      : device.ownership ? styles.ownedText : styles.unownedText,
-                  ]}>
-                    {device.status === 'lost' ? 'Lost' : 
-                     device.status === 'stolen' ? 'Stolen' :
-                     device.status === 'transferred' ? 'Transferred' :
-                     device.ownership ? 'Owned' : 'Unowned'}
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={14} color="#8494A9" />
-              </View>
-            </View>
-          </Pressable>
-        ))}
-      </View>
+            </Pressable>
+          ))}
+        </View>
+      </ScrollView>
 
       {/* Transfer Device Modal */}
       <Modal
@@ -321,7 +374,7 @@ export default function HomeScreen() {
                 <Pressable
                   key={device.key}
                   style={styles.modalDeviceItem}
-                  onPress={() => handleTransferDevice(device)}
+                  onPress={() => initiateAction('transfer', device)}
                 >
                   <View style={styles.modalDeviceIcon}>
                     <Feather name="smartphone" size={18} color="#5A71E4" />
@@ -351,7 +404,63 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+      
+      {/* PIN Authentication Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showPinModal}
+        onRequestClose={() => {
+          setShowPinModal(false);
+          setPin('');
+          setSelectedDeviceAction(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pinModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Enter PIN</Text>
+              <Pressable 
+                onPress={() => {
+                  setShowPinModal(false);
+                  setPin('');
+                  setSelectedDeviceAction(null);
+                }}
+              >
+                <Feather name="x" size={20} color="#222D3A" />
+              </Pressable>
+            </View>
+            
+            <Text style={styles.pinDescription}>
+              {selectedDeviceAction?.type === 'transfer' ? 'Please enter your PIN to transfer this device' :
+               selectedDeviceAction?.type === 'remove' ? 'Please enter your PIN to remove this device' :
+               'Please enter your PIN to continue'}
+            </Text>
+            
+            <TextInput
+              style={styles.pinInput}
+              value={pin}
+              onChangeText={setPin}
+              placeholder="Enter 4-digit PIN"
+              keyboardType="number-pad"
+              maxLength={4}
+              secureTextEntry
+              placeholderTextColor="#8494A9"
+            />
+            
+            <Pressable 
+              style={[styles.pinSubmitButton, pin.length === 4 && styles.pinSubmitButtonActive]}
+              onPress={handlePinSubmit}
+              disabled={pin.length !== 4}
+            >
+              <Text style={[styles.pinSubmitText, pin.length === 4 && styles.pinSubmitTextActive]}>
+                Verify
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -360,13 +469,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FB',
   },
+  scrollView: {
+    flex: 1,
+  },
   contentContainer: {
     padding: 16,
-    paddingTop: 50,
-    paddingBottom: 80,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   greeting: {
     fontFamily: 'Inter-Regular',
@@ -380,7 +492,7 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     borderRadius: 16,
-    marginBottom: 24,
+    marginBottom: 16,
     ...Platform.select({
       ios: {
         shadowColor: '#8C3BFF',
@@ -395,6 +507,9 @@ const styles = StyleSheet.create({
   },
   statsContent: {
     padding: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   iconCircle: {
@@ -404,18 +519,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginRight: 12,
+  },
+  statsTextContainer: {
+    flex: 1,
   },
   statsTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  statsInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   statsNumber: {
     fontFamily: 'Inter-Bold',
-    fontSize: 32,
+    fontSize: 24,
     color: '#FFFFFF',
+    marginRight: 6,
   },
   statsSubtitle: {
     fontFamily: 'Inter-Medium',
@@ -423,22 +546,22 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
   },
   actionsContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
     color: '#222D3A',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   actionButton: {
-    width: '31%',
+    width: '23%',
     backgroundColor: '#FFFFFF',
-    padding: 12,
+    padding: 10,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -449,7 +572,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   actionButtonText: {
     fontFamily: 'Inter-Medium',
@@ -458,13 +581,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   devicesContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   seeAllButton: {
     paddingVertical: 4,
@@ -479,16 +602,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   deviceCardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 14,
+    padding: 12,
   },
   deviceCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1, // Take up available space
+    marginRight: 8, // Add some margin to prevent overlap
   },
   deviceTypeIcon: {
     width: 28,
@@ -498,29 +628,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
+    flexShrink: 0, // Don't shrink the icon
   },
   deviceInfo: {
-    flex: 1,
+    flex: 1, // Take up available space
   },
   deviceName: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: '#222D3A',
+    marginBottom: 2,
+  },
+  deviceDetailRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
   },
   deviceId: {
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: 11,
     color: '#8494A9',
+    marginRight: 6,
+  },
+  deviceDetail: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 11,
+    color: '#8494A9',
+    backgroundColor: 'rgba(132, 148, 169, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 4,
   },
   deviceCardRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0, // Don't shrink this container
   },
   deviceBadge: {
     borderRadius: 10,
     paddingVertical: 3,
     paddingHorizontal: 8,
-    marginRight: 10,
+    marginRight: 8,
   },
   ownedBadge: {
     backgroundColor: 'rgba(90, 228, 126, 0.1)',
@@ -549,6 +698,14 @@ const styles = StyleSheet.create({
   },
   transferredText: {
     color: '#5A71E4',
+  },
+  removeButton: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(228, 90, 90, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -625,5 +782,47 @@ const styles = StyleSheet.create({
     color: '#8494A9',
     marginLeft: 12,
     flex: 1,
+  },
+  pinModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    paddingBottom: 24,
+  },
+  pinDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#8494A9',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  pinInput: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 18,
+    marginBottom: 16,
+    textAlign: 'center',
+    letterSpacing: 6,
+    fontFamily: 'Inter-Bold',
+  },
+  pinSubmitButton: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  pinSubmitButtonActive: {
+    backgroundColor: '#5A71E4',
+  },
+  pinSubmitText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: '#8494A9',
+  },
+  pinSubmitTextActive: {
+    color: '#FFFFFF',
   },
 });

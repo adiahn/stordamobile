@@ -65,31 +65,49 @@ export default function SuccessPage() {
           entering={FadeInUp.duration(600).delay(700)}
         >
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Storda ID</Text>
-            <Text style={styles.infoValue}>{deviceId}</Text>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Device</Text>
-            <Text style={styles.infoValue}>{newDevice.name}</Text>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>IMEI</Text>
-            <Text style={styles.infoValue}>{newDevice.imei}</Text>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Status</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>Active</Text>
+            <View style={styles.infoColumn}>
+              <Text style={styles.infoLabel}>Storda ID</Text>
+              <Text style={styles.infoValue}>{deviceId}</Text>
             </View>
+            
+            <View style={styles.infoColumn}>
+              <Text style={styles.infoLabel}>Status</Text>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>Active</Text>
+              </View>
+            </View>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          <View style={styles.infoRow}>
+            <View style={styles.infoColumn}>
+              <Text style={styles.infoLabel}>Device</Text>
+              <Text style={styles.infoValue}>{newDevice.name}</Text>
+            </View>
+            
+            <View style={styles.infoColumn}>
+              <Text style={styles.infoLabel}>IMEI</Text>
+              <Text style={styles.infoValue} numberOfLines={1}>{newDevice.imei}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.divider} />
+          
+          <View style={styles.infoRow}>
+            {newDevice.storage && (
+              <View style={styles.infoColumn}>
+                <Text style={styles.infoLabel}>Storage</Text>
+                <Text style={styles.infoValue}>{newDevice.storage}</Text>
+              </View>
+            )}
+            
+            {newDevice.color && (
+              <View style={styles.infoColumn}>
+                <Text style={styles.infoLabel}>Color</Text>
+                <Text style={styles.infoValue}>{newDevice.color}</Text>
+              </View>
+            )}
           </View>
         </Animated.View>
 
@@ -153,10 +171,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
+  infoColumn: {
+    flex: 1,
+  },
   infoLabel: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
     color: '#8494A9',
+    marginBottom: 4,
   },
   infoValue: {
     fontFamily: 'Inter-SemiBold',
@@ -173,6 +195,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
+    alignSelf: 'flex-start',
   },
   statusText: {
     fontFamily: 'Inter-Medium',
