@@ -1,10 +1,27 @@
 import { create } from 'zustand';
 
+export interface Device {
+  name: string;
+  imei: string;
+  macAddress: string;
+  id: string;
+  key?: number;
+  ownership?: boolean;
+  storage?: string;
+  color?: string;
+  brand?: string;
+  registrationDate?: string;
+  status?: 'active' | 'reported' | 'lost' | 'stolen';
+  warrantyStatus?: string;
+  insuranceStatus?: string;
+}
+
 interface DeviceStore {
-  selectedDevice: any | null;
-  devices: any[];
-  setSelectedDevice: (device: any) => void;
-  addDevice: (device: any) => void;
+  selectedDevice: Device | null;
+  devices: Device[];
+  setSelectedDevice: (device: Device | null) => void;
+  addDevice: (device: Device) => void;
+  setDevices: (devices: Device[]) => void;
 }
 
 export const useDeviceStore = create<DeviceStore>((set) => ({
@@ -14,4 +31,5 @@ export const useDeviceStore = create<DeviceStore>((set) => ({
   addDevice: (device) => set((state) => ({ 
     devices: [...state.devices, device] 
   })),
+  setDevices: (devices) => set({ devices }),
 }));

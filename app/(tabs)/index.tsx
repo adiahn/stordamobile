@@ -21,12 +21,14 @@ interface Device {
   color?: string;
   brand?: string;
   registrationDate?: string;
+  status?: 'active' | 'reported' | 'lost' | 'stolen';
 }
 
 export default function HomeScreen() {
   const router = useRouter();
   const storeDevices = useDeviceStore((state) => state.devices);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showAllDevices, setShowAllDevices] = useState(false);
   
   // Combine store devices with the initial hardcoded ones if needed
   const [devices, setDevices] = useState<Device[]>([
@@ -37,6 +39,7 @@ export default function HomeScreen() {
       id: 'SRD-21112',
       ownership: true,
       key: 1,
+      status: 'active'
     },
     {
       name: 'iPhone 11 Pro',
@@ -45,6 +48,7 @@ export default function HomeScreen() {
       macAddress: '30291masmdsdmas',
       ownership: false,
       key: 2,
+      status: 'active'
     },
     {
       name: 'Samsung Z Fold 3',
@@ -53,6 +57,25 @@ export default function HomeScreen() {
       macAddress: '30291masmasdmas',
       ownership: false,
       key: 3,
+      status: 'active'
+    },
+    {
+      name: 'Google Pixel 6',
+      imei: '3121321122112',
+      id: 'SRD-21113',
+      macAddress: '30291masmasdmas',
+      ownership: true,
+      key: 4,
+      status: 'active'
+    },
+    {
+      name: 'OnePlus 9 Pro',
+      imei: '3121321122112',
+      id: 'SRD-21114',
+      macAddress: '30291masmasdmas',
+      ownership: true,
+      key: 5,
+      status: 'active'
     },
   ]);
 
@@ -77,8 +100,12 @@ export default function HomeScreen() {
     router.push(`/devices/dev_1`);
   };
 
+  // Display only the first 3 devices unless "See all" is clicked
+  const displayDevices = showAllDevices ? devices : devices.slice(0, 3);
+  const hasMoreDevices = devices.length > 3;
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Good morning,</Text>
         <Text style={styles.name}>Adnan</Text>
@@ -92,7 +119,7 @@ export default function HomeScreen() {
       >
         <View style={styles.statsContent}>
           <View style={styles.iconCircle}>
-            <Feather name="shield" size={22} color="#fff" />
+            <Feather name="shield" size={20} color="#fff" />
           </View>
           <Text style={styles.statsTitle}>Storda Protection</Text>
           <Text style={styles.statsNumber}>{devices.length}</Text>
@@ -109,7 +136,7 @@ export default function HomeScreen() {
             style={[styles.actionButton]}
           >
             <View style={styles.actionIconContainer}>
-              <Feather name="send" size={18} color="#5A71E4" />
+              <Feather name="send" size={16} color="#5A71E4" />
             </View>
             <Text style={styles.actionButtonText}>Transfer Device</Text>
           </Pressable>
@@ -121,7 +148,7 @@ export default function HomeScreen() {
             style={[styles.actionButton]}
           >
             <View style={styles.actionIconContainer}>
-              <Feather name="plus" size={18} color="#5A71E4" />
+              <Feather name="plus" size={16} color="#5A71E4" />
             </View>
             <Text style={styles.actionButtonText}>Add Device</Text>
           </Pressable>
@@ -131,12 +158,19 @@ export default function HomeScreen() {
       <View style={styles.devicesContainer}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Your Devices</Text>
-          <Pressable style={styles.seeAllButton}>
-            <Text style={styles.seeAll}>See all</Text>
-          </Pressable>
+          {hasMoreDevices && (
+            <Pressable 
+              style={styles.seeAllButton}
+              onPress={() => setShowAllDevices(!showAllDevices)}
+            >
+              <Text style={styles.seeAll}>
+                {showAllDevices ? 'Show less' : 'See all'}
+              </Text>
+            </Pressable>
+          )}
         </View>
         
-        {devices.map((device, index) => (
+        {displayDevices.map((device) => (
           <Pressable
             key={device.key}
             style={styles.deviceCard}
@@ -151,35 +185,34 @@ export default function HomeScreen() {
             <View style={styles.deviceCardContent}>
               <View style={styles.deviceCardLeft}>
                 <View style={styles.deviceTypeIcon}>
-                  <Feather name="smartphone" size={14} color="#5A71E4" />
+                  <Feather name="smartphone" size={12} color="#5A71E4" />
                 </View>
-                <View>
+                <View style={styles.deviceInfo}>
                   <Text style={styles.deviceName}>{device.name}</Text>
-                  <View style={styles.deviceDetails}>
-                    <Text style={styles.deviceDetailLabel}>Device ID:</Text>
-                    <Text style={styles.deviceDetailValue}>{device.id}</Text>
-                  </View>
-                  <View style={styles.deviceDetails}>
-                    <Text style={styles.deviceDetailLabel}>IMEI:</Text>
-                    <Text style={styles.deviceDetailValue}>{device.imei}</Text>
-                  </View>
+                  <Text style={styles.deviceId}>{device.id}</Text>
                 </View>
               </View>
               <View style={styles.deviceCardRight}>
                 <View
                   style={[
-                    styles.ownershipBadge,
-                    device.ownership ? styles.ownedBadge : styles.unownedBadge,
+                    styles.deviceBadge,
+                    device.status === 'lost' || device.status === 'stolen' 
+                      ? styles.reportedBadge 
+                      : device.ownership ? styles.ownedBadge : styles.unownedBadge,
                   ]}
                 >
                   <Text style={[
-                    styles.ownershipBadgeText,
-                    device.ownership ? styles.ownedText : styles.unownedText,
+                    styles.deviceBadgeText,
+                    device.status === 'lost' || device.status === 'stolen' 
+                      ? styles.reportedText 
+                      : device.ownership ? styles.ownedText : styles.unownedText,
                   ]}>
-                    {device.ownership ? 'Owned' : 'Unowned'}
+                    {device.status === 'lost' ? 'Lost' : 
+                     device.status === 'stolen' ? 'Stolen' : 
+                     device.ownership ? 'Owned' : 'Unowned'}
                   </Text>
                 </View>
-                <Feather name="chevron-right" size={16} color="#8494A9" />
+                <Feather name="chevron-right" size={14} color="#8494A9" />
               </View>
             </View>
           </Pressable>
@@ -198,7 +231,7 @@ export default function HomeScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Device to Transfer</Text>
               <Pressable onPress={() => setShowTransferModal(false)}>
-                <Feather name="x" size={20} color="#222D3A" />
+                <Feather name="x" size={18} color="#222D3A" />
               </Pressable>
             </View>
             <ScrollView style={styles.deviceList}>
@@ -209,20 +242,20 @@ export default function HomeScreen() {
                   onPress={() => handleTransferDevice(device)}
                 >
                   <View style={styles.deviceOptionIcon}>
-                    <Feather name="smartphone" size={16} color="#5A71E4" />
+                    <Feather name="smartphone" size={14} color="#5A71E4" />
                   </View>
                   <View style={styles.deviceOptionInfo}>
                     <Text style={styles.deviceOptionName}>{device.name}</Text>
                     <Text style={styles.deviceOptionId}>{device.id}</Text>
                   </View>
-                  <Feather name="chevron-right" size={16} color="#8494A9" />
+                  <Feather name="chevron-right" size={14} color="#8494A9" />
                 </Pressable>
               ))}
             </ScrollView>
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -230,89 +263,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',
-    padding: 16,
-    paddingTop: 50,
+  },
+  contentContainer: {
+    padding: 14,
+    paddingTop: 45,
+    paddingBottom: 20,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   greeting: {
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 12,
     color: '#8494A9',
   },
   name: {
     fontFamily: 'Inter-Bold',
-    fontSize: 22,
+    fontSize: 20,
     color: '#222D3A',
   },
   statsCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
   },
   statsContent: {
     alignItems: 'center',
   },
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   statsTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#FFF',
     marginTop: 2,
   },
   statsNumber: {
     fontFamily: 'Inter-Bold',
-    fontSize: 36,
+    fontSize: 32,
     color: '#FFF',
-    marginTop: 8,
+    marginTop: 6,
   },
   statsSubtitle: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 11,
     color: 'rgba(255, 255, 255, 0.8)',
     marginTop: 2,
   },
   actionsContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#222D3A',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   actionButton: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
   },
   actionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   actionButtonText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 11,
     color: '#222D3A',
   },
   devicesContainer: {
@@ -322,75 +358,68 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   seeAllButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 10,
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
   },
   seeAll: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 11,
     color: '#5A71E4',
   },
   deviceCard: {
     backgroundColor: '#FFF',
-    borderRadius: 14,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   deviceCardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
+    padding: 10,
   },
   deviceCardLeft: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 6,
     flexDirection: 'row',
     alignItems: 'center',
   },
   deviceTypeIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
+  },
+  deviceInfo: {
+    flex: 1,
   },
   deviceName: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
-    marginBottom: 3,
-  },
-  deviceDetails: {
-    flexDirection: 'row',
     marginBottom: 2,
   },
-  deviceDetailLabel: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 11,
-    color: '#8494A9',
-    marginRight: 4,
-  },
-  deviceDetailValue: {
+  deviceId: {
     fontFamily: 'Inter-Regular',
-    fontSize: 11,
-    color: '#222D3A',
+    fontSize: 10,
+    color: '#8494A9',
   },
   deviceCardRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  ownershipBadge: {
-    borderRadius: 10,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    marginRight: 8,
+  deviceBadge: {
+    borderRadius: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    marginRight: 6,
   },
   ownedBadge: {
     backgroundColor: 'rgba(90, 228, 126, 0.1)',
@@ -398,15 +427,21 @@ const styles = StyleSheet.create({
   unownedBadge: {
     backgroundColor: 'rgba(228, 90, 90, 0.1)',
   },
-  ownershipBadgeText: {
+  reportedBadge: {
+    backgroundColor: 'rgba(255, 173, 51, 0.1)',
+  },
+  deviceBadgeText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 10,
+    fontSize: 9,
   },
   ownedText: {
     color: '#30B050',
   },
   unownedText: {
     color: '#E45A5A',
+  },
+  reportedText: {
+    color: '#FF9A00',
   },
   // Modal styles
   modalOverlay: {
@@ -418,56 +453,56 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#FFF',
-    borderRadius: 16,
+    borderRadius: 14,
     width: '100%',
-    maxHeight: '70%',
-    padding: 16,
+    maxHeight: '60%',
+    padding: 14,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: 14,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(132, 148, 169, 0.1)',
   },
   modalTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#222D3A',
   },
   deviceList: {
-    maxHeight: 350,
+    maxHeight: 300,
   },
   deviceOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(132, 148, 169, 0.1)',
   },
   deviceOptionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
   deviceOptionInfo: {
     flex: 1,
   },
   deviceOptionName: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
   },
   deviceOptionId: {
     fontFamily: 'Inter-Regular',
-    fontSize: 11,
+    fontSize: 10,
     color: '#8494A9',
-    marginTop: 2,
+    marginTop: 1,
   },
 });

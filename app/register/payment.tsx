@@ -1,111 +1,235 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+import { LinearGradient } from 'expo-linear-gradient';
+import { useDeviceStore } from '../store/store';
 
 export default function PaymentPage() {
   const params = useLocalSearchParams();
-  
-  // Collect all device information to pass to success screen
-  const deviceData = {
-    imei: params.imei,
-    macAddress: params.macAddress,
-    brand: params.brand,
-    model: params.model,
-    storage: params.storage,
-    color: params.color,
-    hasReceipt: params.hasReceipt,
-    hasPhoto: params.hasPhoto
+  const addDevice = useDeviceStore((state: any) => state.addDevice);
+
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [nameOnCard, setNameOnCard] = useState('');
+  const [saveCard, setSaveCard] = useState(false);
+
+  const formatCardNumber = (text: string) => {
+    const formatted = text.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
+    return formatted.substring(0, 19); // limit to 16 digits plus spaces
   };
 
-  const handlePayment = () => {
-    router.push({
-      pathname: '/register/success',
-      params: deviceData
+  const formatExpiryDate = (text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    if (cleaned.length > 2) {
+      return `${cleaned.substring(0, 2)}/${cleaned.substring(2, 4)}`;
+    }
+    return cleaned;
+  };
+
+  const handleCardNumberChange = (text: string) => {
+    setCardNumber(formatCardNumber(text));
+  };
+
+  const handleExpiryDateChange = (text: string) => {
+    setExpiryDate(formatExpiryDate(text));
+  };
+
+  const handleSubmit = () => {
+    if (!cardNumber || !expiryDate || !cvv || !nameOnCard) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    addDevice({
+      id: String(Date.now()),
+      name: `${params.brand} ${params.model}`,
+      imei: params.imei as string,
+      macAddress: params.macAddress as string,
+      brand: params.brand as string,
+      model: params.model as string,
+      color: params.color as string,
+      storage: params.storage as string,
+      registrationDate: new Date().toISOString(),
+      warrantyStatus: 'Active',
+      insuranceStatus: 'Active',
+      status: 'active',
+      key: Date.now(),
+      ownership: true,
     });
+
+    router.push('/');
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
+    <View style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Feather name="arrow-left" size={18} color="#222D3A" />
+          </Pressable>
+          <Text style={styles.title}>Payment</Text>
+          <Text style={styles.subtitle}>Complete your device protection</Text>
+        </View>
+
+        <Animated.View 
+          style={styles.deviceSummary}
+          entering={FadeInUp.duration(500).delay(200)}
         >
-          <Feather name="arrow-left" size={22} color="#222D3A" />
-        </Pressable>
-        <Text style={styles.title}>Payment</Text>
-        <Text style={styles.subtitle}>Complete device registration</Text>
-      </View>
-
-      <Animated.View 
-        style={styles.summaryCard}
-        entering={FadeInUp.duration(500).delay(200)}
-      >
-        <AnimatedLinearGradient
-          colors={['rgba(90, 113, 228, 0.15)', 'rgba(140, 59, 255, 0.15)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientCard}>
-          <View style={styles.summaryHeader}>
-            <Feather name="credit-card" size={24} color="#5A71E4" />
-            <Text style={styles.summaryTitle}>Registration Fee</Text>
-          </View>
-          <Text style={styles.amount}>₦100</Text>
-          <Text style={styles.description}>
-            One-time fee for device registration and protection
-          </Text>
+          <Text style={styles.summaryTitle}>Device Summary</Text>
           
-          <View style={styles.deviceSummary}>
-            <Text style={styles.deviceSummaryLabel}>Device Summary</Text>
-            <View style={styles.deviceDetail}>
-              <Text style={styles.deviceDetailLabel}>Device:</Text>
-              <Text style={styles.deviceDetailValue}>
-                {params.model || 'Unknown Device'} ({params.storage || 'Unknown'})
-              </Text>
+          <View style={styles.deviceInfo}>
+            <View style={styles.deviceIconContainer}>
+              <Feather name="smartphone" size={22} color="#5A71E4" />
             </View>
-            <View style={styles.deviceDetail}>
-              <Text style={styles.deviceDetailLabel}>IMEI:</Text>
-              <Text style={styles.deviceDetailValue}>
-                {params.imei || 'Not provided'}
-              </Text>
+            
+            <View style={styles.deviceDetails}>
+              <Text style={styles.deviceName}>{params.brand} {params.model}</Text>
+              <View style={styles.detailsGrid}>
+                {params.imei && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>IMEI</Text>
+                    <Text style={styles.detailValue}>{params.imei}</Text>
+                  </View>
+                )}
+                {params.storage && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Storage</Text>
+                    <Text style={styles.detailValue}>{params.storage}</Text>
+                  </View>
+                )}
+                {params.color && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Color</Text>
+                    <Text style={styles.detailValue}>{params.color}</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
-        </AnimatedLinearGradient>
-      </Animated.View>
+        </Animated.View>
 
-      <Animated.View 
-        style={styles.walletSection}
-        entering={FadeInUp.duration(500).delay(300)}
-      >
-        <View style={styles.walletHeader}>
-          <Feather name="credit-card" size={20} color="#222D3A" />
-          <Text style={styles.walletTitle}>Pay with Wallet</Text>
-        </View>
-        
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Available Balance</Text>
-          <Text style={styles.balanceAmount}>₦230.02</Text>
-        </View>
+        <Animated.View 
+          style={styles.pricingCard}
+          entering={FadeInUp.duration(500).delay(300)}
+        >
+          <Text style={styles.pricingTitle}>Protection Plan</Text>
+          
+          <View style={styles.planDetails}>
+            <View style={styles.planFeature}>
+              <Feather name="check" size={16} color="#30B050" />
+              <Text style={styles.planFeatureText}>Theft Protection</Text>
+            </View>
+            <View style={styles.planFeature}>
+              <Feather name="check" size={16} color="#30B050" />
+              <Text style={styles.planFeatureText}>Damage Protection</Text>
+            </View>
+            <View style={styles.planFeature}>
+              <Feather name="check" size={16} color="#30B050" />
+              <Text style={styles.planFeatureText}>24/7 Support</Text>
+            </View>
+          </View>
+          
+          <LinearGradient
+            colors={['rgba(90, 113, 228, 0.1)', 'rgba(90, 113, 228, 0.05)']}
+            style={styles.pricingRow}
+          >
+            <Text style={styles.pricingLabel}>Total Price</Text>
+            <Text style={styles.pricingValue}>$9.99 / month</Text>
+          </LinearGradient>
+        </Animated.View>
 
-        <AnimatedPressable style={styles.payButton} onPress={handlePayment}>
-          <Text style={styles.payButtonText}>Pay ₦100</Text>
-          <Feather name="arrow-right" size={20} color="#FFF" />
-        </AnimatedPressable>
-
-        <Text style={styles.disclaimer}>
-          By proceeding, you agree to pay the registration fee of ₦100
-        </Text>
-      </Animated.View>
-    </ScrollView>
+        <Animated.View 
+          style={styles.paymentForm}
+          entering={FadeInUp.duration(500).delay(400)}
+        >
+          <Text style={styles.formLabel}>Payment Details</Text>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Card Number</Text>
+            <View style={styles.cardNumberInput}>
+              <TextInput
+                style={styles.input}
+                placeholder="1234 5678 9012 3456"
+                placeholderTextColor="#8494A9"
+                keyboardType="numeric"
+                value={cardNumber}
+                onChangeText={handleCardNumberChange}
+                maxLength={19}
+              />
+              <View style={styles.cardBrand}>
+                <Feather name="credit-card" size={16} color="#8494A9" />
+              </View>
+            </View>
+          </View>
+          
+          <View style={styles.formRow}>
+            <View style={[styles.inputGroup, {flex: 1}]}>
+              <Text style={styles.inputLabel}>Expiry Date</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="MM/YY"
+                placeholderTextColor="#8494A9"
+                keyboardType="numeric"
+                value={expiryDate}
+                onChangeText={handleExpiryDateChange}
+                maxLength={5}
+              />
+            </View>
+            <View style={[styles.inputGroup, {flex: 1}]}>
+              <Text style={styles.inputLabel}>CVV</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="123"
+                placeholderTextColor="#8494A9"
+                keyboardType="numeric"
+                value={cvv}
+                onChangeText={setCvv}
+                maxLength={3}
+                secureTextEntry
+              />
+            </View>
+          </View>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Name on Card</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="John Smith"
+              placeholderTextColor="#8494A9"
+              value={nameOnCard}
+              onChangeText={setNameOnCard}
+            />
+          </View>
+          
+          <Pressable 
+            style={styles.saveCardRow} 
+            onPress={() => setSaveCard(!saveCard)}
+          >
+            <View style={[styles.checkbox, saveCard && styles.checkboxChecked]}>
+              {saveCard && <Feather name="check" size={12} color="#FFF" />}
+            </View>
+            <Text style={styles.saveCardText}>Save card for future payments</Text>
+          </Pressable>
+        </Animated.View>
+      </ScrollView>
+      
+      <View style={styles.footer}>
+        <Pressable style={styles.buyButton} onPress={handleSubmit}>
+          <Text style={styles.buyButtonText}>Complete Purchase</Text>
+          <Feather name="arrow-right" size={18} color="#FFF" />
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -114,140 +238,223 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FB',
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 40,
+    padding: 14,
+    paddingTop: 45,
+    paddingBottom: 80,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 14,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 14,
   },
   title: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 28,
+    fontSize: 22,
     color: '#222D3A',
   },
   subtitle: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 13,
     color: '#8494A9',
-    marginTop: 4,
+    marginTop: 2,
   },
-  summaryCard: {
-    marginBottom: 24,
-  },
-  gradientCard: {
-    borderRadius: 20,
-    padding: 24,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+  deviceSummary: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
   },
   summaryTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
+    fontSize: 13,
     color: '#222D3A',
+    marginBottom: 10,
   },
-  amount: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 36,
-    color: '#222D3A',
-    marginBottom: 8,
+  deviceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  description: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: '#8494A9',
-    lineHeight: 20,
-    marginBottom: 24,
+  deviceIconContainer: {
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(90, 113, 228, 0.1)',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  deviceSummary: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 16,
-    padding: 16,
+  deviceDetails: {
+    flex: 1,
   },
-  deviceSummaryLabel: {
+  deviceName: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
+    color: '#222D3A',
+    marginBottom: 6,
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  detailItem: {
+    marginRight: 12,
+    marginBottom: 4,
+  },
+  detailLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 10,
+    color: '#8494A9',
+  },
+  detailValue: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: '#222D3A',
+  },
+  pricingCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+  },
+  pricingTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 13,
+    color: '#222D3A',
+    marginBottom: 10,
+  },
+  planDetails: {
+    marginBottom: 12,
+  },
+  planFeature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  planFeatureText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: '#222D3A',
+    marginLeft: 8,
+  },
+  pricingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 10,
+    padding: 10,
+  },
+  pricingLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: '#222D3A',
+  },
+  pricingValue: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 14,
+    color: '#5A71E4',
+  },
+  paymentForm: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+  },
+  formLabel: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 13,
     color: '#222D3A',
     marginBottom: 12,
   },
-  deviceDetail: {
+  inputGroup: {
+    marginBottom: 12,
+  },
+  formRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    gap: 12,
   },
-  deviceDetailLabel: {
+  inputLabel: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
-    color: '#8494A9',
-    width: 70,
-  },
-  deviceDetailValue: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 12,
     color: '#222D3A',
-    flex: 1,
+    marginBottom: 6,
   },
-  walletSection: {
-    gap: 16,
+  input: {
+    height: 44,
+    backgroundColor: '#F8F9FB',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: '#222D3A',
   },
-  walletHeader: {
+  cardNumberInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    height: 44,
+    backgroundColor: '#F8F9FB',
+    borderRadius: 12,
+    paddingHorizontal: 12,
   },
-  walletTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
-    color: '#222D3A',
+  cardBrand: {
+    marginLeft: 'auto',
   },
-  balanceCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
+  saveCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
   },
-  balanceLabel: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: '#8494A9',
-    marginBottom: 4,
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#8494A9',
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  balanceAmount: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 24,
-    color: '#222D3A',
-  },
-  payButton: {
-    height: 56,
+  checkboxChecked: {
     backgroundColor: '#5A71E4',
-    borderRadius: 16,
+    borderColor: '#5A71E4',
+  },
+  saveCardText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#222D3A',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 14,
+  },
+  buyButton: {
+    height: 48,
+    backgroundColor: '#5A71E4',
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  payButtonText: {
+  buyButtonText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#FFF',
-  },
-  disclaimer: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: '#8494A9',
-    textAlign: 'center',
-    marginTop: 8,
   },
 });

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import * as Device from 'expo-device';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -18,13 +19,30 @@ export default function DeviceDetailsPage() {
   const [hasReceipt, setHasReceipt] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
   const [isPreFilled, setIsPreFilled] = useState(false);
+  const [deviceModelName, setDeviceModelName] = useState('');
 
   useEffect(() => {
     // Check if we have detected information
     if (params.detectedName || params.detectedStorage || params.detectedColor) {
       setIsPreFilled(true);
     }
-  }, [params]);
+
+    // Get real device model name
+    const getDeviceInfo = async () => {
+      try {
+        const modelName = Device.modelName || '';
+        
+        if (modelName && !model) {
+          setModel(modelName);
+          setDeviceModelName(modelName);
+        }
+      } catch (err) {
+        console.error('Error getting device info:', err);
+      }
+    };
+
+    getDeviceInfo();
+  }, [params, model]);
 
   const handleContinue = () => {
     router.push({
@@ -33,7 +51,7 @@ export default function DeviceDetailsPage() {
         imei: params.imei,
         macAddress: params.macAddress,
         brand: params.brand,
-        model,
+        model: model || deviceModelName,
         storage,
         color,
         hasReceipt: hasReceipt ? 'true' : 'false',
@@ -53,7 +71,7 @@ export default function DeviceDetailsPage() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Feather name="arrow-left" size={22} color="#222D3A" />
+          <Feather name="arrow-left" size={18} color="#222D3A" />
         </Pressable>
         <Text style={styles.title}>Device Details</Text>
         <Text style={styles.subtitle}>Tell us more about your device</Text>
@@ -65,7 +83,7 @@ export default function DeviceDetailsPage() {
           entering={FadeInUp.duration(500).delay(200)}
         >
           <View style={styles.detectedHeader}>
-            <Feather name="check-circle" size={20} color="#30B050" />
+            <Feather name="check-circle" size={18} color="#30B050" />
             <Text style={styles.detectedHeaderText}>Device Information Detected</Text>
           </View>
           <Text style={styles.detectedSubtext}>
@@ -74,10 +92,7 @@ export default function DeviceDetailsPage() {
         </Animated.View>
       )}
 
-      <Animated.View 
-        style={styles.formContainer}
-        entering={FadeInUp.duration(500).delay(300)}
-      >
+      <View style={styles.formContainer}>
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
             <Text style={styles.label}>Model Name</Text>
@@ -102,7 +117,7 @@ export default function DeviceDetailsPage() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chipList}>
             {STORAGE_OPTIONS.map((option) => (
-              <AnimatedPressable
+              <Pressable
                 key={option}
                 style={[
                   styles.chip,
@@ -116,7 +131,7 @@ export default function DeviceDetailsPage() {
                   ]}>
                   {option}
                 </Text>
-              </AnimatedPressable>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
@@ -131,7 +146,7 @@ export default function DeviceDetailsPage() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chipList}>
             {COLORS.map((option) => (
-              <AnimatedPressable
+              <Pressable
                 key={option}
                 style={[
                   styles.chip,
@@ -145,42 +160,42 @@ export default function DeviceDetailsPage() {
                   ]}>
                   {option}
                 </Text>
-              </AnimatedPressable>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
 
         <View style={styles.uploadSection}>
-          <Text style={styles.label}>Additional Documents</Text>
+          <Text style={styles.label}>Additional Documents (Optional)</Text>
           
           <View style={styles.uploadCards}>
-            <AnimatedPressable
+            <Pressable
               style={[styles.uploadCard, hasReceipt && styles.uploadCardActive]}
               onPress={() => setHasReceipt(!hasReceipt)}>
               <View style={[styles.uploadIcon, hasReceipt && styles.uploadIconActive]}>
-                <Feather name="file-text" size={22} color={hasReceipt ? "#FFF" : "#5A71E4"} />
+                <Feather name="file-text" size={18} color={hasReceipt ? "#FFF" : "#5A71E4"} />
               </View>
               <Text style={styles.uploadTitle}>Purchase Receipt</Text>
               <Text style={styles.uploadSubtitle}>PDF or Image</Text>
-            </AnimatedPressable>
+            </Pressable>
 
-            <AnimatedPressable
+            <Pressable
               style={[styles.uploadCard, hasPhoto && styles.uploadCardActive]}
               onPress={() => setHasPhoto(!hasPhoto)}>
               <View style={[styles.uploadIcon, hasPhoto && styles.uploadIconActive]}>
-                <Feather name="camera" size={22} color={hasPhoto ? "#FFF" : "#5A71E4"} />
+                <Feather name="camera" size={18} color={hasPhoto ? "#FFF" : "#5A71E4"} />
               </View>
               <Text style={styles.uploadTitle}>Device Photo</Text>
               <Text style={styles.uploadSubtitle}>Take or upload photo</Text>
-            </AnimatedPressable>
+            </Pressable>
           </View>
         </View>
 
-        <AnimatedPressable style={styles.continueButton} onPress={handleContinue}>
+        <Pressable style={styles.continueButton} onPress={handleContinue}>
           <Text style={styles.continueButtonText}>Continue to Payment</Text>
-          <Feather name="arrow-right" size={20} color="#FFF" />
-        </AnimatedPressable>
-      </Animated.View>
+          <Feather name="arrow-right" size={18} color="#FFF" />
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -191,89 +206,89 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FB',
   },
   content: {
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 40,
+    padding: 14,
+    paddingTop: 45,
+    paddingBottom: 20,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 14,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 14,
   },
   title: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 28,
+    fontSize: 22,
     color: '#222D3A',
   },
   subtitle: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 13,
     color: '#8494A9',
-    marginTop: 4,
+    marginTop: 2,
   },
   detectedInfo: {
     backgroundColor: 'rgba(48, 176, 80, 0.1)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
   },
   detectedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   detectedHeaderText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#30B050',
-    marginLeft: 8,
+    marginLeft: 6,
   },
   detectedSubtext: {
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 12,
     color: '#222D3A',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   formContainer: {
-    gap: 24,
+    gap: 16,
   },
   inputGroup: {
-    gap: 8,
+    gap: 6,
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   label: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
   },
   autoFilled: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 11,
     color: '#30B050',
     backgroundColor: 'rgba(48, 176, 80, 0.1)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: 10,
   },
   input: {
-    height: 52,
+    height: 46,
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 14,
     color: '#222D3A',
   },
   inputDetected: {
@@ -283,40 +298,40 @@ const styles = StyleSheet.create({
   },
   chipList: {
     gap: 8,
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     backgroundColor: '#FFF',
-    borderRadius: 20,
-    marginRight: 8,
+    borderRadius: 18,
+    marginRight: 6,
   },
   chipSelected: {
     backgroundColor: '#5A71E4',
   },
   chipText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 12,
     color: '#8494A9',
   },
   chipTextSelected: {
     color: '#FFF',
   },
   uploadSection: {
-    gap: 16,
+    gap: 12,
   },
   uploadCards: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   uploadCard: {
     flex: 1,
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   uploadCardActive: {
     backgroundColor: 'rgba(90, 113, 228, 0.05)',
@@ -324,10 +339,10 @@ const styles = StyleSheet.create({
     borderColor: '#5A71E4',
   },
   uploadIcon: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
-    borderRadius: 16,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -336,27 +351,27 @@ const styles = StyleSheet.create({
   },
   uploadTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
   },
   uploadSubtitle: {
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: 11,
     color: '#8494A9',
   },
   continueButton: {
-    height: 56,
+    height: 48,
     backgroundColor: '#5A71E4',
-    borderRadius: 16,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 12,
+    marginTop: 10,
   },
   continueButtonText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#FFF',
   },
 });

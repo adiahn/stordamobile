@@ -1,5 +1,5 @@
 import { useLocalSearchParams, router } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { useDeviceStore } from '../store/store';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,8 +10,9 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function DeviceDetailsScreen() {
   const params = useLocalSearchParams();
-  const storeDevice = useDeviceStore((state) => state.selectedDevice);
+  const storeDevices = useDeviceStore((state) => state.devices) || [];
   const [isExpanded, setIsExpanded] = useState(false);
+  const storeDevice = useDeviceStore((state) => state.selectedDevice);
 
   // Use the device from store, or fallback to params
   const device = storeDevice || {
@@ -24,6 +25,7 @@ export default function DeviceDetailsScreen() {
     color: params.color || '',
     brand: params.brand || '',
     registrationDate: params.registrationDate || new Date().toISOString(),
+    status: 'active'
   };
 
   const handleDeleteDevice = () => {
@@ -38,9 +40,18 @@ export default function DeviceDetailsScreen() {
         { 
           text: "Remove", 
           onPress: () => {
-            // In a real app, we would remove the device from the store
-            // For now just navigate back since we don't have removeDevice in store
+            // Mark device as removed in global state
+            const devices = [...storeDevices];
+            const deviceIndex = devices.findIndex(d => d.key === device.key);
+            
+            if (deviceIndex !== -1) {
+              devices.splice(deviceIndex, 1);
+              // Update store with devices
+              useDeviceStore.getState().setDevices(devices);
+            }
+            
             router.back();
+            router.push('/(tabs)');
           },
           style: "destructive"
         }
@@ -51,7 +62,7 @@ export default function DeviceDetailsScreen() {
   const handleTransferDevice = () => {
     // Set selected device in store first
     useDeviceStore.getState().setSelectedDevice(device);
-    // Navigate to transfer screen (which we'll create)
+    // Navigate to transfer screen 
     router.push('/devices/dev_1');
   };
 
@@ -67,12 +78,14 @@ export default function DeviceDetailsScreen() {
         { 
           text: "Lost", 
           onPress: () => {
+            updateDeviceStatus('lost');
             Alert.alert("Device Reported", "Your device has been reported as lost. We'll notify you if it's found.");
           }
         },
         { 
           text: "Stolen", 
           onPress: () => {
+            updateDeviceStatus('stolen');
             Alert.alert("Device Reported", "Your device has been reported as stolen. Law enforcement has been notified.");
           }
         }
@@ -80,18 +93,54 @@ export default function DeviceDetailsScreen() {
     );
   };
 
+  const updateDeviceStatus = (status: 'active' | 'lost' | 'stolen') => {
+    // Update status in global state
+    const devices = [...storeDevices];
+    const deviceIndex = devices.findIndex(d => d.key === device.key);
+    
+    if (deviceIndex !== -1) {
+      devices[deviceIndex] = { ...devices[deviceIndex], status };
+      // Update store with modified devices
+      useDeviceStore.getState().setDevices(devices);
+      // Update selected device
+      useDeviceStore.getState().setSelectedDevice({...device, status});
+    }
+  };
+
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
 
+  const getStatusColor = () => {
+    switch(device.status) {
+      case 'lost':
+      case 'stolen':
+        return 'rgba(255, 173, 51, 0.3)';
+      default:
+        return device.ownership 
+          ? 'rgba(255, 255, 255, 0.3)' 
+          : 'rgba(228, 90, 90, 0.3)';
+    }
+  };
+
+  const getStatusText = () => {
+    if (device.status === 'lost') return 'Lost';
+    if (device.status === 'stolen') return 'Stolen';
+    return device.ownership ? 'Owned' : 'Unowned';
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
         <AnimatedPressable 
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Feather name="arrow-left" size={20} color="#222D3A" />
+          <Feather name="arrow-left" size={18} color="#222D3A" />
         </AnimatedPressable>
       </View>
 
@@ -106,13 +155,13 @@ export default function DeviceDetailsScreen() {
           style={styles.deviceGradient}
         >
           <View style={styles.deviceIcon}>
-            <Feather name="smartphone" size={28} color="#FFF" />
+            <Feather name="smartphone" size={24} color="#FFF" />
           </View>
           <Text style={styles.deviceName}>{device.name}</Text>
           <View style={styles.deviceStatus}>
-            <View style={device.ownership ? styles.ownedBadge : styles.unownedBadge}>
-              <Text style={device.ownership ? styles.ownedText : styles.unownedText}>
-                {device.ownership ? 'Owned' : 'Unowned'}
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
+              <Text style={styles.statusText}>
+                {getStatusText()}
               </Text>
             </View>
           </View>
@@ -126,7 +175,7 @@ export default function DeviceDetailsScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Device Information</Text>
           <Pressable onPress={toggleExpand} style={styles.expandButton}>
-            <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color="#5A71E4" />
+            <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color="#5A71E4" />
           </Pressable>
         </View>
         
@@ -197,6 +246,26 @@ export default function DeviceDetailsScreen() {
                   </View>
                 </>
               )}
+              
+              <View style={styles.divider} />
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Status</Text>
+                <View style={[
+                  styles.statusChip, 
+                  device.status === 'lost' || device.status === 'stolen' 
+                    ? styles.reportedChip 
+                    : device.ownership ? styles.ownedChip : styles.unownedChip
+                ]}>
+                  <Text style={[
+                    styles.statusChipText,
+                    device.status === 'lost' || device.status === 'stolen' 
+                      ? styles.reportedChipText 
+                      : device.ownership ? styles.ownedChipText : styles.unownedChipText
+                  ]}>
+                    {getStatusText()}
+                  </Text>
+                </View>
+              </View>
             </>
           )}
         </View>
@@ -212,21 +281,31 @@ export default function DeviceDetailsScreen() {
           <AnimatedPressable 
             style={styles.actionButton}
             onPress={handleTransferDevice}
+            disabled={device.status === 'lost' || device.status === 'stolen'}
           >
-            <View style={[styles.actionIcon, styles.primaryAction]}>
-              <Feather name="refresh-cw" size={18} color="#FFF" />
+            <View style={[styles.actionIcon, styles.primaryAction, 
+              (device.status === 'lost' || device.status === 'stolen') && styles.disabledAction]}>
+              <Feather name="refresh-cw" size={16} color="#FFF" />
             </View>
-            <Text style={styles.actionText}>Transfer</Text>
+            <Text style={[styles.actionText, 
+              (device.status === 'lost' || device.status === 'stolen') && styles.disabledText]}>
+              Transfer
+            </Text>
           </AnimatedPressable>
           
           <AnimatedPressable 
             style={styles.actionButton}
             onPress={handleReportDevice}
+            disabled={device.status === 'lost' || device.status === 'stolen'}
           >
-            <View style={[styles.actionIcon, styles.secondaryAction]}>
-              <Feather name="flag" size={18} color="#FFF" />
+            <View style={[styles.actionIcon, styles.secondaryAction,
+              (device.status === 'lost' || device.status === 'stolen') && styles.disabledAction]}>
+              <Feather name="flag" size={16} color="#FFF" />
             </View>
-            <Text style={styles.actionText}>Report</Text>
+            <Text style={[styles.actionText,
+              (device.status === 'lost' || device.status === 'stolen') && styles.disabledText]}>
+              Report
+            </Text>
           </AnimatedPressable>
           
           <AnimatedPressable 
@@ -234,13 +313,13 @@ export default function DeviceDetailsScreen() {
             onPress={handleDeleteDevice}
           >
             <View style={[styles.actionIcon, styles.dangerAction]}>
-              <Feather name="trash-2" size={18} color="#FFF" />
+              <Feather name="trash-2" size={16} color="#FFF" />
             </View>
             <Text style={styles.actionText}>Remove</Text>
           </AnimatedPressable>
         </View>
       </Animated.View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -248,129 +327,149 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',
-    padding: 16,
-    paddingTop: 50,
+  },
+  contentContainer: {
+    padding: 14,
+    paddingTop: 45,
+    paddingBottom: 20,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   deviceCard: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   deviceGradient: {
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
   },
   deviceIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   deviceName: {
     fontFamily: 'Inter-Bold',
-    fontSize: 20,
+    fontSize: 18,
     color: '#FFFFFF',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   deviceStatus: {
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  ownedBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingVertical: 5,
-    paddingHorizontal: 14,
-    borderRadius: 16,
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 14,
   },
-  unownedBadge: {
-    backgroundColor: 'rgba(228, 90, 90, 0.3)',
-    paddingVertical: 5,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-  },
-  ownedText: {
+  statusText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 13,
-    color: '#FFFFFF',
-  },
-  unownedText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 13,
+    fontSize: 12,
     color: '#FFFFFF',
   },
   detailsContainer: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   expandButton: {
-    padding: 5,
+    padding: 4,
   },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#222D3A',
   },
   detailCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 12,
+    padding: 14,
   },
   detailItem: {
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   detailLabel: {
     fontFamily: 'Inter-Medium',
-    fontSize: 13,
+    fontSize: 12,
     color: '#8494A9',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   detailValue: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
   },
   divider: {
     height: 1,
     backgroundColor: 'rgba(132, 148, 169, 0.15)',
   },
+  statusChip: {
+    alignSelf: 'flex-start',
+    borderRadius: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    marginTop: 2,
+  },
+  ownedChip: {
+    backgroundColor: 'rgba(90, 228, 126, 0.1)',
+  },
+  unownedChip: {
+    backgroundColor: 'rgba(228, 90, 90, 0.1)',
+  },
+  reportedChip: {
+    backgroundColor: 'rgba(255, 173, 51, 0.1)',
+  },
+  statusChipText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 10,
+  },
+  ownedChipText: {
+    color: '#30B050',
+  },
+  unownedChipText: {
+    color: '#E45A5A',
+  },
+  reportedChipText: {
+    color: '#FF9A00',
+  },
   actionsContainer: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 10,
   },
   actionButton: {
     width: '30%',
     alignItems: 'center',
   },
   actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   primaryAction: {
     backgroundColor: '#5A71E4',
@@ -381,9 +480,15 @@ const styles = StyleSheet.create({
   dangerAction: {
     backgroundColor: '#E45A5A',
   },
+  disabledAction: {
+    backgroundColor: '#CCCCCC',
+  },
   actionText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 13,
+    fontSize: 12,
     color: '#222D3A',
+  },
+  disabledText: {
+    color: '#8494A9',
   },
 });
