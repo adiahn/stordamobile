@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useDeviceStore } from '../store/store';
+import { useDeviceStore, Device as StoreDevice } from '../store/store';
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -21,8 +21,17 @@ interface Device {
   color?: string;
   brand?: string;
   registrationDate?: string;
-  status?: 'active' | 'reported' | 'lost' | 'stolen';
+  status?: 'active' | 'reported' | 'lost' | 'stolen' | 'transferred';
+  transferredTo?: string;
 }
+
+// User profile information
+const USER_PROFILE = {
+  name: "Adnan Muhammad Mukhtar",
+  email: "adnan@storda.ng",
+  phone: "+2347011313752",
+  country: "Nigeria"
+};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -82,8 +91,24 @@ export default function HomeScreen() {
   // Update devices when store changes
   useEffect(() => {
     if (storeDevices && storeDevices.length > 0) {
-      // Add store devices to the beginning of the list, preserving initial ones
-      const combinedDevices = [...storeDevices, ...devices];
+      // Convert store devices to local Device type
+      const convertedStoreDevices: Device[] = storeDevices.map(d => ({
+        name: d.name,
+        imei: d.imei,
+        macAddress: d.macAddress,
+        id: d.id,
+        key: d.key || Date.now(),
+        ownership: d.ownership || false,
+        storage: d.storage,
+        color: d.color,
+        brand: d.brand,
+        registrationDate: d.registrationDate,
+        status: d.status,
+        transferredTo: d.transferredTo
+      }));
+      
+      // Combine with existing devices
+      const combinedDevices = [...convertedStoreDevices, ...devices];
       
       // Filter out duplicates based on key
       const uniqueDevices = combinedDevices.filter((device, index, self) =>
@@ -95,7 +120,22 @@ export default function HomeScreen() {
   }, [storeDevices]);
 
   const handleTransferDevice = (device: Device) => {
-    useDeviceStore.getState().setSelectedDevice(device);
+    // Convert local Device to StoreDevice for the store
+    const storeDevice: StoreDevice = {
+      name: device.name,
+      imei: device.imei,
+      macAddress: device.macAddress,
+      id: device.id,
+      key: device.key,
+      ownership: device.ownership,
+      storage: device.storage,
+      color: device.color,
+      brand: device.brand,
+      registrationDate: device.registrationDate,
+      status: device.status
+    };
+    
+    useDeviceStore.getState().setSelectedDevice(storeDevice);
     setShowTransferModal(false);
     router.push(`/devices/dev_1`);
   };
@@ -104,11 +144,16 @@ export default function HomeScreen() {
   const displayDevices = showAllDevices ? devices : devices.slice(0, 3);
   const hasMoreDevices = devices.length > 3;
 
+  // Count active devices (not transferred, lost, or stolen)
+  const activeDeviceCount = devices.filter(
+    device => device.status !== 'transferred' && device.status !== 'lost' && device.status !== 'stolen'
+  ).length;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Good morning,</Text>
-        <Text style={styles.name}>Adnan</Text>
+        <Text style={styles.name}>{USER_PROFILE.name.split(' ')[0]}</Text>
       </View>
 
       <LinearGradient
@@ -122,7 +167,7 @@ export default function HomeScreen() {
             <Feather name="shield" size={20} color="#fff" />
           </View>
           <Text style={styles.statsTitle}>Storda Protection</Text>
-          <Text style={styles.statsNumber}>{devices.length}</Text>
+          <Text style={styles.statsNumber}>{activeDeviceCount}</Text>
           <Text style={styles.statsSubtitle}>Devices Protected</Text>
         </View>
       </LinearGradient>
@@ -152,6 +197,16 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.actionButtonText}>Add Device</Text>
           </Pressable>
+          
+          <Pressable
+            onPress={() => router.push('/devices')}
+            style={[styles.actionButton]}
+          >
+            <View style={styles.actionIconContainer}>
+              <Feather name="smartphone" size={16} color="#5A71E4" />
+            </View>
+            <Text style={styles.actionButtonText}>View Devices</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -175,7 +230,22 @@ export default function HomeScreen() {
             key={device.key}
             style={styles.deviceCard}
             onPress={() => {
-              useDeviceStore.getState().setSelectedDevice(device);
+              // Convert to StoreDevice before setting in store
+              const storeDevice: StoreDevice = {
+                name: device.name,
+                imei: device.imei,
+                macAddress: device.macAddress,
+                id: device.id,
+                key: device.key,
+                ownership: device.ownership,
+                storage: device.storage,
+                color: device.color,
+                brand: device.brand,
+                registrationDate: device.registrationDate,
+                status: device.status
+              };
+              
+              useDeviceStore.getState().setSelectedDevice(storeDevice);
               router.push({
                 pathname: '/view/[Id]',
                 params: { Id: device.id },
@@ -198,6 +268,8 @@ export default function HomeScreen() {
                     styles.deviceBadge,
                     device.status === 'lost' || device.status === 'stolen' 
                       ? styles.reportedBadge 
+                      : device.status === 'transferred'
+                      ? styles.transferredBadge
                       : device.ownership ? styles.ownedBadge : styles.unownedBadge,
                   ]}
                 >
@@ -205,10 +277,13 @@ export default function HomeScreen() {
                     styles.deviceBadgeText,
                     device.status === 'lost' || device.status === 'stolen' 
                       ? styles.reportedText 
+                      : device.status === 'transferred'
+                      ? styles.transferredText
                       : device.ownership ? styles.ownedText : styles.unownedText,
                   ]}>
                     {device.status === 'lost' ? 'Lost' : 
-                     device.status === 'stolen' ? 'Stolen' : 
+                     device.status === 'stolen' ? 'Stolen' :
+                     device.status === 'transferred' ? 'Transferred' :
                      device.ownership ? 'Owned' : 'Unowned'}
                   </Text>
                 </View>
@@ -221,36 +296,57 @@ export default function HomeScreen() {
 
       {/* Transfer Device Modal */}
       <Modal
-        visible={showTransferModal}
+        animationType="slide"
         transparent={true}
-        animationType="fade"
+        visible={showTransferModal}
         onRequestClose={() => setShowTransferModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Device to Transfer</Text>
+              <Text style={styles.modalTitle}>Transfer Device</Text>
               <Pressable onPress={() => setShowTransferModal(false)}>
-                <Feather name="x" size={18} color="#222D3A" />
+                <Feather name="x" size={20} color="#222D3A" />
               </Pressable>
             </View>
-            <ScrollView style={styles.deviceList}>
-              {devices.filter(d => d.ownership).map((device) => (
+            <Text style={styles.modalSubtitle}>Select a device to transfer</Text>
+            
+            <ScrollView style={styles.modalDeviceList}>
+              {devices.filter(device => 
+                device.ownership && 
+                device.status !== 'lost' && 
+                device.status !== 'stolen' && 
+                device.status !== 'transferred'
+              ).map((device) => (
                 <Pressable
                   key={device.key}
-                  style={styles.deviceOption}
+                  style={styles.modalDeviceItem}
                   onPress={() => handleTransferDevice(device)}
                 >
-                  <View style={styles.deviceOptionIcon}>
-                    <Feather name="smartphone" size={14} color="#5A71E4" />
+                  <View style={styles.modalDeviceIcon}>
+                    <Feather name="smartphone" size={18} color="#5A71E4" />
                   </View>
-                  <View style={styles.deviceOptionInfo}>
-                    <Text style={styles.deviceOptionName}>{device.name}</Text>
-                    <Text style={styles.deviceOptionId}>{device.id}</Text>
+                  <View style={styles.modalDeviceInfo}>
+                    <Text style={styles.modalDeviceName}>{device.name}</Text>
+                    <Text style={styles.modalDeviceId}>{device.id}</Text>
                   </View>
-                  <Feather name="chevron-right" size={14} color="#8494A9" />
+                  <Feather name="chevron-right" size={18} color="#8494A9" />
                 </Pressable>
               ))}
+              
+              {devices.filter(device => 
+                device.ownership && 
+                device.status !== 'lost' && 
+                device.status !== 'stolen' &&
+                device.status !== 'transferred'
+              ).length === 0 && (
+                <View style={styles.noDevicesMessage}>
+                  <Feather name="info" size={20} color="#8494A9" />
+                  <Text style={styles.noDevicesText}>
+                    You don't have any devices eligible for transfer. Devices that are lost, stolen, or already transferred cannot be transferred.
+                  </Text>
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -265,76 +361,85 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FB',
   },
   contentContainer: {
-    padding: 14,
-    paddingTop: 45,
-    paddingBottom: 20,
+    padding: 16,
+    paddingTop: 50,
+    paddingBottom: 80,
   },
   header: {
-    marginBottom: 14,
+    marginBottom: 24,
   },
   greeting: {
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: 14,
     color: '#8494A9',
   },
   name: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 20,
+    fontFamily: 'Poppins-Bold',
+    fontSize: 22,
     color: '#222D3A',
   },
   statsCard: {
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#8C3BFF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   statsContent: {
+    padding: 16,
     alignItems: 'center',
   },
   iconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   statsTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
-    color: '#FFF',
-    marginTop: 2,
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginBottom: 8,
   },
   statsNumber: {
     fontFamily: 'Inter-Bold',
     fontSize: 32,
-    color: '#FFF',
-    marginTop: 6,
+    color: '#FFFFFF',
   },
   statsSubtitle: {
     fontFamily: 'Inter-Medium',
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 2,
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   actionsContainer: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
+    fontSize: 16,
     color: '#222D3A',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
   },
   actionButton: {
-    flex: 1,
+    width: '31%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
     padding: 12,
+    borderRadius: 12,
     alignItems: 'center',
   },
   actionIconContainer: {
@@ -344,35 +449,34 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   actionButtonText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 11,
+    fontSize: 12,
     color: '#222D3A',
+    textAlign: 'center',
   },
   devicesContainer: {
-    flex: 1,
+    marginBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   seeAllButton: {
-    paddingVertical: 3,
+    paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 10,
-    backgroundColor: 'rgba(90, 113, 228, 0.1)',
   },
   seeAll: {
     fontFamily: 'Inter-Medium',
-    fontSize: 11,
+    fontSize: 13,
     color: '#5A71E4',
   },
   deviceCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginBottom: 8,
   },
@@ -380,11 +484,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    padding: 14,
   },
   deviceCardLeft: {
-    flex: 1,
-    marginRight: 6,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -395,20 +497,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 10,
   },
   deviceInfo: {
     flex: 1,
   },
   deviceName: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 13,
+    fontSize: 14,
     color: '#222D3A',
-    marginBottom: 2,
   },
   deviceId: {
     fontFamily: 'Inter-Regular',
-    fontSize: 10,
+    fontSize: 12,
     color: '#8494A9',
   },
   deviceCardRight: {
@@ -416,10 +517,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deviceBadge: {
-    borderRadius: 8,
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    marginRight: 6,
+    borderRadius: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    marginRight: 10,
   },
   ownedBadge: {
     backgroundColor: 'rgba(90, 228, 126, 0.1)',
@@ -430,9 +531,12 @@ const styles = StyleSheet.create({
   reportedBadge: {
     backgroundColor: 'rgba(255, 173, 51, 0.1)',
   },
+  transferredBadge: {
+    backgroundColor: 'rgba(90, 113, 228, 0.1)',
+  },
   deviceBadgeText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 9,
+    fontSize: 10,
   },
   ownedText: {
     color: '#30B050',
@@ -443,66 +547,83 @@ const styles = StyleSheet.create({
   reportedText: {
     color: '#FF9A00',
   },
-  // Modal styles
+  transferredText: {
+    color: '#5A71E4',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    width: '100%',
-    maxHeight: '60%',
-    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    height: '70%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
-    paddingBottom: 10,
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 18,
+    color: '#222D3A',
+  },
+  modalSubtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#8494A9',
+    marginBottom: 16,
+  },
+  modalDeviceList: {
+    flex: 1,
+  },
+  modalDeviceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(132, 148, 169, 0.1)',
   },
-  modalTitle: {
+  modalDeviceIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(90, 113, 228, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modalDeviceInfo: {
+    flex: 1,
+  },
+  modalDeviceName: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: '#222D3A',
   },
-  deviceList: {
-    maxHeight: 300,
-  },
-  deviceOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(132, 148, 169, 0.1)',
-  },
-  deviceOptionIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(90, 113, 228, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  deviceOptionInfo: {
-    flex: 1,
-  },
-  deviceOptionName: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 13,
-    color: '#222D3A',
-  },
-  deviceOptionId: {
+  modalDeviceId: {
     fontFamily: 'Inter-Regular',
-    fontSize: 10,
+    fontSize: 12,
     color: '#8494A9',
-    marginTop: 1,
+  },
+  noDevicesMessage: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    backgroundColor: 'rgba(132, 148, 169, 0.1)',
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  noDevicesText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#8494A9',
+    marginLeft: 12,
+    flex: 1,
   },
 });

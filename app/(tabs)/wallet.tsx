@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
@@ -19,14 +20,14 @@ const TRANSACTIONS = [
     id: 2,
     type: 'debit',
     amount: '₦100.00',
-    description: 'iPhone Registration',
+    description: 'Device Transfer Fee',
     date: 'May 15, 2023',
   },
   {
     id: 3,
     type: 'debit',
     amount: '₦100.00',
-    description: 'Samsung Registration',
+    description: 'Device Transfer Fee',
     date: 'Apr 30, 2023',
   },
   {
@@ -39,22 +40,37 @@ const TRANSACTIONS = [
 ];
 
 export default function WalletScreen() {
+  const router = useRouter();
   const [showAll, setShowAll] = useState(false);
   const transactions = showAll ? TRANSACTIONS : TRANSACTIONS.slice(0, 3);
 
-  return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <Animated.View 
-        style={styles.header}
-        entering={FadeInUp.duration(500).delay(100)}
-      >
-        <Text style={styles.headerTitle}>Wallet</Text>
-      </Animated.View>
+  const handleTopUp = () => {
+    Alert.alert(
+      "Add Funds",
+      "Choose an amount to add to your wallet",
+      [
+        {
+          text: "₦100",
+          onPress: () => Alert.alert("Success", "₦100 added to your wallet")
+        },
+        {
+          text: "₦500",
+          onPress: () => Alert.alert("Success", "₦500 added to your wallet")
+        },
+        {
+          text: "₦1000",
+          onPress: () => Alert.alert("Success", "₦1000 added to your wallet")
+        },
+        {
+          text: "Cancel",
+          style: "cancel"
+        }
+      ]
+    );
+  };
 
+  const renderContent = () => (
+    <>
       <AnimatedLinearGradient
         colors={['#5A71E4', '#8C3BFF']}
         start={{ x: 0, y: 0 }}
@@ -64,18 +80,29 @@ export default function WalletScreen() {
       >
         <View style={styles.balanceContent}>
           <Text style={styles.balanceLabel}>Available Balance</Text>
-          <Text style={styles.balanceAmount}>₦230.00</Text>
-          
-          <View style={styles.balanceActions}>
-            <AnimatedPressable style={styles.balanceActionButton}>
-              <View style={styles.actionIconContainer}>
-                <Feather name="plus" size={18} color="#FFF" />
-              </View>
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceAmount}>₦230.00</Text>
+            <AnimatedPressable 
+              style={styles.balanceActionButton}
+              onPress={handleTopUp}
+            >
+              <Feather name="plus" size={16} color="#FFF" />
               <Text style={styles.actionButtonText}>Top Up</Text>
             </AnimatedPressable>
           </View>
         </View>
       </AnimatedLinearGradient>
+
+      <Animated.View 
+        style={styles.walletInfoContainer}
+        entering={FadeInUp.duration(500).delay(300)}
+      >
+        <Text style={styles.walletInfoTitle}>About Transfer Fees</Text>
+        <Text style={styles.walletInfoText}>
+          Device registration is free. Transfer fees of ₦100 apply when sending a device to another user.
+          These fees are automatically withdrawn from your wallet balance.
+        </Text>
+      </Animated.View>
 
       <Animated.View 
         style={styles.transactionsContainer}
@@ -97,6 +124,7 @@ export default function WalletScreen() {
               key={transaction.id} 
               style={styles.transactionItem}
               entering={FadeInUp.duration(300).delay(600 + index * 100)}
+              onPress={() => Alert.alert("Transaction Details", `${transaction.description}\nAmount: ${transaction.amount}\nDate: ${transaction.date}`)}
             >
               <View style={[
                 styles.transactionIconContainer,
@@ -126,7 +154,31 @@ export default function WalletScreen() {
           ))}
         </View>
       </Animated.View>
-    </ScrollView>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      <Animated.View 
+        style={styles.header}
+        entering={FadeInUp.duration(500).delay(100)}
+      >
+        <Text style={styles.headerTitle}>Wallet</Text>
+      </Animated.View>
+
+      {showAll ? (
+        <ScrollView 
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {renderContent()}
+        </ScrollView>
+      ) : (
+        <View style={styles.content}>
+          {renderContent()}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -134,13 +186,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',
+    paddingTop: 50,
   },
   content: {
     padding: 16,
-    paddingTop: 50,
-    paddingBottom: 80,
+    paddingBottom: 30,
   },
   header: {
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
   headerTitle: {
@@ -150,7 +203,7 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     borderRadius: 16,
-    marginBottom: 24,
+    marginBottom: 16,
     ...Platform.select({
       ios: {
         shadowColor: '#8C3BFF',
@@ -164,8 +217,7 @@ const styles = StyleSheet.create({
     }),
   },
   balanceContent: {
-    padding: 20,
-    alignItems: 'center',
+    padding: 16,
   },
   balanceLabel: {
     fontFamily: 'Inter-Medium',
@@ -173,38 +225,49 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 6,
   },
+  balanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   balanceAmount: {
     fontFamily: 'Inter-Bold',
-    fontSize: 36,
+    fontSize: 28,
     color: '#FFFFFF',
-    marginBottom: 20,
-  },
-  balanceActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
   },
   balanceActionButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 12,
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 90,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  actionIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
   },
   actionButtonText: {
     fontFamily: 'Inter-Medium',
     fontSize: 13,
     color: '#FFFFFF',
+    marginLeft: 6,
+  },
+  walletInfoContainer: {
+    backgroundColor: 'rgba(90, 113, 228, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  walletInfoTitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#5A71E4',
+    marginBottom: 4,
+  },
+  walletInfoText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#222D3A',
+    lineHeight: 18,
   },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',

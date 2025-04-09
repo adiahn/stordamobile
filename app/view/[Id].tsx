@@ -29,6 +29,15 @@ export default function DeviceDetailsScreen() {
   };
 
   const handleDeleteDevice = () => {
+    if (device.status === 'transferred') {
+      Alert.alert(
+        "Cannot Remove Device",
+        "This device has been transferred to another user and cannot be removed from your history.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    
     Alert.alert(
       "Remove Device",
       "Are you sure you want to remove this device from your account? This action cannot be undone.",
@@ -40,14 +49,9 @@ export default function DeviceDetailsScreen() {
         { 
           text: "Remove", 
           onPress: () => {
-            // Mark device as removed in global state
-            const devices = [...storeDevices];
-            const deviceIndex = devices.findIndex(d => d.key === device.key);
-            
-            if (deviceIndex !== -1) {
-              devices.splice(deviceIndex, 1);
-              // Update store with devices
-              useDeviceStore.getState().setDevices(devices);
+            if (device.key) {
+              // Use the new removeDevice function
+              useDeviceStore.getState().removeDevice(device.key);
             }
             
             router.back();
@@ -60,6 +64,17 @@ export default function DeviceDetailsScreen() {
   };
 
   const handleTransferDevice = () => {
+    if (device.status === 'lost' || device.status === 'stolen' || device.status === 'transferred') {
+      Alert.alert(
+        "Cannot Transfer Device",
+        device.status === 'transferred'
+          ? "This device has already been transferred."
+          : "You cannot transfer a device that has been reported as lost or stolen.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    
     // Set selected device in store first
     useDeviceStore.getState().setSelectedDevice(device);
     // Navigate to transfer screen 
@@ -93,17 +108,17 @@ export default function DeviceDetailsScreen() {
     );
   };
 
-  const updateDeviceStatus = (status: 'active' | 'lost' | 'stolen') => {
-    // Update status in global state
-    const devices = [...storeDevices];
-    const deviceIndex = devices.findIndex(d => d.key === device.key);
-    
-    if (deviceIndex !== -1) {
-      devices[deviceIndex] = { ...devices[deviceIndex], status };
-      // Update store with modified devices
-      useDeviceStore.getState().setDevices(devices);
-      // Update selected device
-      useDeviceStore.getState().setSelectedDevice({...device, status});
+  const updateDeviceStatus = (status: 'active' | 'lost' | 'stolen' | 'transferred', transferredTo?: string) => {
+    if (device.key) {
+      // Use the new updateDeviceStatus function from the store
+      useDeviceStore.getState().updateDeviceStatus(device.key, status, transferredTo);
+      
+      // Update selected device in local state for UI updates
+      useDeviceStore.getState().setSelectedDevice({
+        ...device, 
+        status,
+        ...(transferredTo ? { transferredTo } : {})
+      });
     }
   };
 
@@ -126,6 +141,7 @@ export default function DeviceDetailsScreen() {
   const getStatusText = () => {
     if (device.status === 'lost') return 'Lost';
     if (device.status === 'stolen') return 'Stolen';
+    if (device.status === 'transferred') return 'Transferred';
     return device.ownership ? 'Owned' : 'Unowned';
   };
 

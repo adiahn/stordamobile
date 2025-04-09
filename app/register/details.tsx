@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import * as Device from 'expo-device';
+import { useDeviceStore, Device as DeviceType } from '../store/store';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -12,6 +13,7 @@ const COLORS = ['Midnight Black', 'Sierra Blue', 'Gold', 'Silver', 'Graphite'];
 
 export default function DeviceDetailsPage() {
   const params = useLocalSearchParams();
+  const addDevice = useDeviceStore((state) => state.addDevice);
   
   const [model, setModel] = useState(params.detectedName as string || '');
   const [storage, setStorage] = useState(params.detectedStorage as string || '');
@@ -45,12 +47,28 @@ export default function DeviceDetailsPage() {
   }, [params, model]);
 
   const handleContinue = () => {
+    // Add the device to the store
+    const newDevice: DeviceType = {
+      name: model || deviceModelName,
+      imei: params.imei as string,
+      macAddress: params.macAddress as string,
+      id: `STD-${Math.floor(100000 + Math.random() * 900000)}`, // Generate random ID
+      ownership: true,
+      storage,
+      color, 
+      registrationDate: new Date().toISOString(),
+      status: 'active',
+      key: Date.now() // Use timestamp as key
+    };
+    
+    addDevice(newDevice);
+    
+    // Navigate directly to success screen
     router.push({
-      pathname: '/register/payment',
+      pathname: '/register/success',
       params: {
         imei: params.imei,
         macAddress: params.macAddress,
-        brand: params.brand,
         model: model || deviceModelName,
         storage,
         color,
@@ -87,7 +105,7 @@ export default function DeviceDetailsPage() {
             <Text style={styles.detectedHeaderText}>Device Information Detected</Text>
           </View>
           <Text style={styles.detectedSubtext}>
-            We've automatically filled in your device information. Please verify or modify as needed.
+            We've automatically filled in your device information. Auto-detected fields cannot be modified.
           </Text>
         </Animated.View>
       )}
@@ -104,6 +122,7 @@ export default function DeviceDetailsPage() {
             onChangeText={setModel}
             placeholder="e.g., iPhone 13 Pro, Galaxy S21"
             placeholderTextColor="#8494A9"
+            editable={!isPreFilled}
           />
         </View>
 
@@ -122,12 +141,15 @@ export default function DeviceDetailsPage() {
                 style={[
                   styles.chip,
                   storage === option && styles.chipSelected,
+                  isPreFilled && storage && option !== storage && styles.chipDisabled
                 ]}
-                onPress={() => setStorage(option)}>
+                onPress={() => !isPreFilled && setStorage(option)}
+                disabled={isPreFilled && !!storage}>
                 <Text
                   style={[
                     styles.chipText,
                     storage === option && styles.chipTextSelected,
+                    isPreFilled && storage && option !== storage && styles.chipTextDisabled
                   ]}>
                   {option}
                 </Text>
@@ -151,12 +173,15 @@ export default function DeviceDetailsPage() {
                 style={[
                   styles.chip,
                   color === option && styles.chipSelected,
+                  isPreFilled && color && option !== color && styles.chipDisabled
                 ]}
-                onPress={() => setColor(option)}>
+                onPress={() => !isPreFilled && setColor(option)}
+                disabled={isPreFilled && !!color}>
                 <Text
                   style={[
                     styles.chipText,
                     color === option && styles.chipTextSelected,
+                    isPreFilled && color && option !== color && styles.chipTextDisabled
                   ]}>
                   {option}
                 </Text>
@@ -192,7 +217,7 @@ export default function DeviceDetailsPage() {
         </View>
 
         <Pressable style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.continueButtonText}>Continue to Payment</Text>
+          <Text style={styles.continueButtonText}>Register Device</Text>
           <Feather name="arrow-right" size={18} color="#FFF" />
         </Pressable>
       </View>
@@ -248,111 +273,116 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: '#30B050',
-    marginLeft: 6,
+    marginLeft: 8,
   },
   detectedSubtext: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#222D3A',
-    lineHeight: 18,
+    color: '#30B050',
+    opacity: 0.8,
   },
   formContainer: {
-    gap: 16,
+    marginBottom: 20,
   },
   inputGroup: {
-    gap: 6,
+    marginBottom: 16,
   },
   labelRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    alignItems: 'center',
+    marginBottom: 8,
   },
   label: {
     fontFamily: 'Inter-Medium',
-    fontSize: 13,
+    fontSize: 14,
     color: '#222D3A',
   },
   autoFilled: {
     fontFamily: 'Inter-Medium',
-    fontSize: 11,
+    fontSize: 12,
     color: '#30B050',
-    backgroundColor: 'rgba(48, 176, 80, 0.1)',
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    borderRadius: 10,
   },
   input: {
-    height: 46,
-    backgroundColor: '#FFF',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     paddingHorizontal: 14,
+    paddingVertical: 12,
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: '#222D3A',
   },
   inputDetected: {
+    backgroundColor: 'rgba(48, 176, 80, 0.05)',
     borderWidth: 1,
-    borderColor: '#5A71E4',
-    backgroundColor: 'rgba(90, 113, 228, 0.05)',
+    borderColor: 'rgba(48, 176, 80, 0.2)',
   },
   chipList: {
-    gap: 8,
     paddingVertical: 6,
   },
   chip: {
-    paddingHorizontal: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FFF',
-    borderRadius: 18,
-    marginRight: 6,
+    marginRight: 8,
   },
   chipSelected: {
     backgroundColor: '#5A71E4',
   },
+  chipDisabled: {
+    backgroundColor: '#F0F0F0',
+    opacity: 0.5,
+  },
   chipText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 13,
     color: '#8494A9',
   },
   chipTextSelected: {
-    color: '#FFF',
+    color: '#FFFFFF',
+  },
+  chipTextDisabled: {
+    color: '#CCCCCC',
   },
   uploadSection: {
-    gap: 12,
+    marginTop: 8,
+    marginBottom: 24,
   },
   uploadCards: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
+    marginTop: 8,
   },
   uploadCard: {
-    flex: 1,
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    padding: 14,
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
-    gap: 6,
   },
   uploadCardActive: {
     backgroundColor: 'rgba(90, 113, 228, 0.05)',
     borderWidth: 1,
-    borderColor: '#5A71E4',
+    borderColor: 'rgba(90, 113, 228, 0.2)',
   },
   uploadIcon: {
     width: 40,
     height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
-    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 8,
   },
   uploadIconActive: {
     backgroundColor: '#5A71E4',
   },
   uploadTitle: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: 'Inter-Medium',
     fontSize: 13,
     color: '#222D3A',
+    marginBottom: 4,
   },
   uploadSubtitle: {
     fontFamily: 'Inter-Regular',
@@ -360,18 +390,17 @@ const styles = StyleSheet.create({
     color: '#8494A9',
   },
   continueButton: {
-    height: 48,
     backgroundColor: '#5A71E4',
-    borderRadius: 14,
+    borderRadius: 12,
+    height: 50,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 10,
   },
   continueButtonText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
-    color: '#FFF',
+    fontSize: 16,
+    color: '#FFFFFF',
   },
 });

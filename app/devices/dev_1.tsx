@@ -8,6 +8,10 @@ import { useState } from 'react';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+// Mock wallet balance - in a real app, this would come from a wallet/payment store
+const TRANSFER_FEE = 100; // Fixed fee of ₦100 for transfer
+const WALLET_BALANCE = 230; // ₦230 balance
+
 export default function TransferDeviceScreen() {
   const selectedDevice = useDeviceStore((state: any) => state.selectedDevice);
   const [email, setEmail] = useState('');
@@ -33,11 +37,30 @@ export default function TransferDeviceScreen() {
       Alert.alert('Error', 'Please enter a valid phone number');
       return;
     }
+    
+    // Check if user has enough balance for transfer fee
+    if (WALLET_BALANCE < TRANSFER_FEE) {
+      Alert.alert(
+        'Insufficient Balance',
+        `You need ₦${TRANSFER_FEE} in your wallet to transfer this device. Please top up your wallet.`,
+        [
+          {
+            text: 'Top Up',
+            onPress: () => router.push('/(tabs)/wallet'),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
 
-    // Confirm transfer
+    // Confirm transfer with fee information
     Alert.alert(
       'Confirm Transfer',
-      `Are you sure you want to transfer ${device.name} to ${transferType === 'email' ? email : phone}?`,
+      `A fee of ₦${TRANSFER_FEE} will be charged from your wallet for this transfer. Are you sure you want to transfer ${device.name} to ${transferType === 'email' ? email : phone}?`,
       [
         {
           text: 'Cancel',
@@ -46,10 +69,19 @@ export default function TransferDeviceScreen() {
         {
           text: 'Transfer',
           onPress: () => {
+            if (device.key) {
+              // Update device status to transferred
+              useDeviceStore.getState().updateDeviceStatus(
+                device.key,
+                'transferred',
+                transferType === 'email' ? email : phone
+              );
+            }
+            
             // Show success message
             Alert.alert(
               'Device Transferred',
-              `${device.name} has been transferred successfully.`,
+              `${device.name} has been transferred successfully. A fee of ₦${TRANSFER_FEE} has been deducted from your wallet.`,
               [
                 {
                   text: 'OK',
@@ -96,6 +128,22 @@ export default function TransferDeviceScreen() {
             </View>
           </View>
         </LinearGradient>
+      </Animated.View>
+
+      <Animated.View
+        style={styles.feeInfoSection}
+        entering={FadeInUp.duration(500).delay(150)}
+      >
+        <View style={styles.feeCard}>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Transfer Fee:</Text>
+            <Text style={styles.feeAmount}>₦{TRANSFER_FEE}</Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Your Balance:</Text>
+            <Text style={styles.balanceAmount}>₦{WALLET_BALANCE}</Text>
+          </View>
+        </View>
       </Animated.View>
 
       <Animated.View
@@ -281,6 +329,35 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 13,
     color: '#8494A9',
+  },
+  feeInfoSection: {
+    marginBottom: 20,
+  },
+  feeCard: {
+    backgroundColor: 'rgba(90, 113, 228, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+  },
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  feeLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#222D3A',
+  },
+  feeAmount: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#5A71E4',
+  },
+  balanceAmount: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#5A71E4',
   },
   transferOptions: {
     marginBottom: 20,

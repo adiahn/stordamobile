@@ -9,7 +9,6 @@ export default function RegisterLayout() {
       }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="details" />
-      <Stack.Screen name="payment" />
       <Stack.Screen name="success" />
     </Stack>
   );

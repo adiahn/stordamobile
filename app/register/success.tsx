@@ -3,7 +3,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { useDeviceStore } from '../store/store';
+import { useDeviceStore, Device as StoreDevice } from '../store/store';
+
+// Define the device status type to match the store definition
+type DeviceStatus = 'active' | 'reported' | 'lost' | 'stolen' | 'transferred';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -12,7 +15,7 @@ export default function SuccessPage() {
   const deviceId = 'STORDA-' + Math.floor(1000000 + Math.random() * 9000000);
   
   // Create a new device object
-  const newDevice = {
+  const newDevice: StoreDevice = {
     name: params.model as string || 'New Device',
     imei: params.imei as string || '000000000000000',
     macAddress: params.macAddress as string || 'Unknown',
@@ -23,11 +26,13 @@ export default function SuccessPage() {
     color: params.color as string,
     brand: params.brand as string,
     registrationDate: new Date().toISOString(),
+    status: 'active' as DeviceStatus, // Explicitly type as DeviceStatus
   };
 
+  const { addDevice } = useDeviceStore();
+  
   const handleContinue = () => {
     // Add the new device to the store
-    const { addDevice } = useDeviceStore.getState();
     if (addDevice) {
       addDevice(newDevice);
     }
@@ -83,7 +88,7 @@ export default function SuccessPage() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Status</Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>Protected</Text>
+              <Text style={styles.statusText}>Active</Text>
             </View>
           </View>
         </Animated.View>
