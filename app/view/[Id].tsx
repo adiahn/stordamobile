@@ -1,15 +1,17 @@
 import { useLocalSearchParams, router } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform } from 'react-native';
 import { useDeviceStore } from '../store/store';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useState } from 'react';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function DeviceDetailsScreen() {
   const params = useLocalSearchParams();
   const storeDevice = useDeviceStore((state) => state.selectedDevice);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Use the device from store, or fallback to params
   const device = storeDevice || {
@@ -24,17 +26,72 @@ export default function DeviceDetailsScreen() {
     registrationDate: params.registrationDate || new Date().toISOString(),
   };
 
+  const handleDeleteDevice = () => {
+    Alert.alert(
+      "Remove Device",
+      "Are you sure you want to remove this device from your account? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Remove", 
+          onPress: () => {
+            // In a real app, we would remove the device from the store
+            // For now just navigate back since we don't have removeDevice in store
+            router.back();
+          },
+          style: "destructive"
+        }
+      ]
+    );
+  };
+
+  const handleTransferDevice = () => {
+    // Set selected device in store first
+    useDeviceStore.getState().setSelectedDevice(device);
+    // Navigate to transfer screen (which we'll create)
+    router.push('/devices/dev_1');
+  };
+
+  const handleReportDevice = () => {
+    Alert.alert(
+      "Report Device",
+      "Report this device as lost or stolen?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Lost", 
+          onPress: () => {
+            Alert.alert("Device Reported", "Your device has been reported as lost. We'll notify you if it's found.");
+          }
+        },
+        { 
+          text: "Stolen", 
+          onPress: () => {
+            Alert.alert("Device Reported", "Your device has been reported as stolen. Law enforcement has been notified.");
+          }
+        }
+      ]
+    );
+  };
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   return (
-    <ScrollView 
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
         <AnimatedPressable 
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Feather name="arrow-left" size={22} color="#222D3A" />
+          <Feather name="arrow-left" size={20} color="#222D3A" />
         </AnimatedPressable>
       </View>
 
@@ -49,7 +106,7 @@ export default function DeviceDetailsScreen() {
           style={styles.deviceGradient}
         >
           <View style={styles.deviceIcon}>
-            <Feather name="smartphone" size={32} color="#FFF" />
+            <Feather name="smartphone" size={28} color="#FFF" />
           </View>
           <Text style={styles.deviceName}>{device.name}</Text>
           <View style={styles.deviceStatus}>
@@ -66,7 +123,12 @@ export default function DeviceDetailsScreen() {
         style={styles.detailsContainer}
         entering={FadeInUp.duration(500).delay(200)}
       >
-        <Text style={styles.sectionTitle}>Device Information</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Device Information</Text>
+          <Pressable onPress={toggleExpand} style={styles.expandButton}>
+            <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={18} color="#5A71E4" />
+          </Pressable>
+        </View>
         
         <View style={styles.detailCard}>
           <View style={styles.detailItem}>
@@ -81,56 +143,60 @@ export default function DeviceDetailsScreen() {
             <Text style={styles.detailValue}>{device.imei}</Text>
           </View>
           
-          <View style={styles.divider} />
-          
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>MAC Address</Text>
-            <Text style={styles.detailValue}>{device.macAddress}</Text>
-          </View>
-
-          {device.brand && (
+          {isExpanded && (
             <>
               <View style={styles.divider} />
+              
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Brand</Text>
-                <Text style={styles.detailValue}>{device.brand}</Text>
+                <Text style={styles.detailLabel}>MAC Address</Text>
+                <Text style={styles.detailValue}>{device.macAddress}</Text>
               </View>
-            </>
-          )}
 
-          {device.storage && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Storage</Text>
-                <Text style={styles.detailValue}>{device.storage}</Text>
-              </View>
-            </>
-          )}
+              {device.brand && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Brand</Text>
+                    <Text style={styles.detailValue}>{device.brand}</Text>
+                  </View>
+                </>
+              )}
 
-          {device.color && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Color</Text>
-                <Text style={styles.detailValue}>{device.color}</Text>
-              </View>
-            </>
-          )}
+              {device.storage && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Storage</Text>
+                    <Text style={styles.detailValue}>{device.storage}</Text>
+                  </View>
+                </>
+              )}
 
-          {device.registrationDate && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Registered</Text>
-                <Text style={styles.detailValue}>
-                  {new Date(device.registrationDate).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                </Text>
-              </View>
+              {device.color && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Color</Text>
+                    <Text style={styles.detailValue}>{device.color}</Text>
+                  </View>
+                </>
+              )}
+
+              {device.registrationDate && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Registered</Text>
+                    <Text style={styles.detailValue}>
+                      {new Date(device.registrationDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </Text>
+                  </View>
+                </>
+              )}
             </>
           )}
         </View>
@@ -143,29 +209,38 @@ export default function DeviceDetailsScreen() {
         <Text style={styles.sectionTitle}>Actions</Text>
         
         <View style={styles.actionsRow}>
-          <AnimatedPressable style={styles.actionButton}>
+          <AnimatedPressable 
+            style={styles.actionButton}
+            onPress={handleTransferDevice}
+          >
             <View style={[styles.actionIcon, styles.primaryAction]}>
-              <Feather name="refresh-cw" size={20} color="#FFF" />
+              <Feather name="refresh-cw" size={18} color="#FFF" />
             </View>
             <Text style={styles.actionText}>Transfer</Text>
           </AnimatedPressable>
           
-          <AnimatedPressable style={styles.actionButton}>
+          <AnimatedPressable 
+            style={styles.actionButton}
+            onPress={handleReportDevice}
+          >
             <View style={[styles.actionIcon, styles.secondaryAction]}>
-              <Feather name="bell" size={20} color="#FFF" />
+              <Feather name="flag" size={18} color="#FFF" />
             </View>
-            <Text style={styles.actionText}>Alert</Text>
+            <Text style={styles.actionText}>Report</Text>
           </AnimatedPressable>
           
-          <AnimatedPressable style={styles.actionButton}>
+          <AnimatedPressable 
+            style={styles.actionButton}
+            onPress={handleDeleteDevice}
+          >
             <View style={[styles.actionIcon, styles.dangerAction]}>
-              <Feather name="trash-2" size={20} color="#FFF" />
+              <Feather name="trash-2" size={18} color="#FFF" />
             </View>
             <Text style={styles.actionText}>Remove</Text>
           </AnimatedPressable>
         </View>
       </Animated.View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -173,44 +248,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',
+    padding: 16,
+    paddingTop: 50,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   deviceCard: {
-    marginHorizontal: 20,
-    borderRadius: 24,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   deviceGradient: {
-    padding: 24,
+    padding: 20,
     alignItems: 'center',
   },
   deviceIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   deviceName: {
     fontFamily: 'Inter-Bold',
-    fontSize: 24,
+    fontSize: 20,
     color: '#FFFFFF',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   deviceStatus: {
     flexDirection: 'row',
@@ -218,53 +292,60 @@ const styles = StyleSheet.create({
   },
   ownedBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    borderRadius: 16,
   },
   unownedBadge: {
     backgroundColor: 'rgba(228, 90, 90, 0.3)',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    borderRadius: 16,
   },
   ownedText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
   },
   unownedText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
   },
   detailsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  expandButton: {
+    padding: 5,
   },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
+    fontSize: 16,
     color: '#222D3A',
-    marginBottom: 16,
   },
   detailCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 14,
+    padding: 16,
   },
   detailItem: {
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   detailLabel: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#8494A9',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   detailValue: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#222D3A',
   },
   divider: {
@@ -272,21 +353,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(132, 148, 169, 0.15)',
   },
   actionsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 40,
+    marginBottom: 16,
   },
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 12,
   },
   actionButton: {
     width: '30%',
     alignItems: 'center',
   },
   actionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -302,7 +383,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
   },
 });

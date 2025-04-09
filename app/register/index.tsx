@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -75,67 +75,53 @@ export default function RegisterDevicePage() {
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <Animated.View 
-        style={styles.header}
-        entering={FadeInUp.duration(500).delay(100)}
-      >
+    <View style={styles.container}>
+      <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Feather name="arrow-left" size={22} color="#222D3A" />
+          <Feather name="arrow-left" size={20} color="#222D3A" />
         </Pressable>
         <Text style={styles.title}>Register Device</Text>
         <Text style={styles.subtitle}>Protect your device with Storda</Text>
-      </Animated.View>
+      </View>
 
-      <Animated.View 
-        entering={FadeInUp.duration(500).delay(200)}
-        style={styles.infoCard}
+      <LinearGradient
+        colors={['rgba(90, 113, 228, 0.15)', 'rgba(140, 59, 255, 0.15)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientCard}
       >
-        <AnimatedLinearGradient
-          colors={['rgba(90, 113, 228, 0.15)', 'rgba(140, 59, 255, 0.15)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientCard}>
-          <View style={styles.infoContent}>
-            <View style={styles.iconContainer}>
-              <Feather name="smartphone" size={22} color="#5A71E4" />
-            </View>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoTitle}>Why Register?</Text>
-              <Text style={styles.infoText}>
-                Registering your device helps protect it from theft and makes recovery easier if lost.
-              </Text>
-            </View>
+        <View style={styles.infoContent}>
+          <View style={styles.iconContainer}>
+            <Feather name="smartphone" size={20} color="#5A71E4" />
           </View>
-          
-          <AnimatedPressable 
-            style={styles.detectButton} 
-            onPress={handleDetectDevice}
-            disabled={isDetecting}
-          >
-            {isDetecting ? (
-              <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-            ) : (
-              <Feather name="zap" size={18} color="#FFF" style={{ marginRight: 8 }} />
-            )}
-            <Text style={styles.detectButtonText}>
-              {isDetecting ? 'Detecting...' : deviceDetected ? 'Device Detected' : 'Auto-Detect Device Info'}
+          <View style={styles.infoTextContainer}>
+            <Text style={styles.infoTitle}>Why Register?</Text>
+            <Text style={styles.infoText}>
+              Registering your device helps protect it from theft and makes recovery easier if lost.
             </Text>
-          </AnimatedPressable>
-        </AnimatedLinearGradient>
-      </Animated.View>
+          </View>
+        </View>
+        
+        <AnimatedPressable 
+          style={styles.detectButton} 
+          onPress={handleDetectDevice}
+          disabled={isDetecting}
+        >
+          {isDetecting ? (
+            <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+          ) : (
+            <Feather name="zap" size={16} color="#FFF" style={{ marginRight: 8 }} />
+          )}
+          <Text style={styles.detectButtonText}>
+            {isDetecting ? 'Detecting...' : deviceDetected ? 'Device Detected' : 'Auto-Detect Device Info'}
+          </Text>
+        </AnimatedPressable>
+      </LinearGradient>
 
-      <Animated.View 
-        style={styles.formContainer}
-        entering={FadeInUp.duration(500).delay(300)}
-      >
+      <View style={styles.formContainer}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>IMEI Number</Text>
           <View style={styles.inputWrapper}>
@@ -153,13 +139,13 @@ export default function RegisterDevicePage() {
               editable={!isDetecting}
             />
             <AnimatedPressable style={styles.scanButton} disabled={isDetecting}>
-              <Feather name="camera" size={20} color="#5A71E4" />
+              <Feather name="camera" size={18} color="#5A71E4" />
             </AnimatedPressable>
           </View>
           <Text style={styles.helper}>Dial *#06# to get your IMEI number</Text>
           {error && (
             <View style={styles.errorContainer}>
-              <Feather name="alert-circle" size={16} color="#E45A5A" />
+              <Feather name="alert-circle" size={14} color="#E45A5A" />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -197,10 +183,10 @@ export default function RegisterDevicePage() {
           disabled={isDetecting}
         >
           <Text style={styles.continueButtonText}>Continue</Text>
-          <Feather name="arrow-right" size={20} color="#FFF" />
+          <Feather name="arrow-right" size={18} color="#FFF" />
         </AnimatedPressable>
-      </Animated.View>
-    </ScrollView>
+      </View>
+    </View>
   );
 }
 
@@ -208,109 +194,104 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',
-  },
-  content: {
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 40,
+    padding: 16,
+    paddingTop: 50,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   title: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 28,
+    fontSize: 24,
     color: '#222D3A',
   },
   subtitle: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 14,
     color: '#8494A9',
-    marginTop: 4,
-  },
-  infoCard: {
-    marginBottom: 28,
+    marginTop: 2,
   },
   gradientCard: {
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
   },
   infoContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
+    width: 42,
+    height: 42,
     backgroundColor: '#FFF',
-    borderRadius: 16,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   infoTextContainer: {
     flex: 1,
   },
   infoTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
+    fontSize: 16,
     color: '#222D3A',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   infoText: {
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 13,
     color: '#8494A9',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   detectButton: {
-    height: 46,
+    height: 44,
     backgroundColor: '#5A71E4',
-    borderRadius: 16,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   detectButtonText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFF',
   },
   formContainer: {
-    gap: 24,
+    gap: 18,
   },
   inputGroup: {
-    gap: 8,
+    gap: 6,
   },
   label: {
     fontFamily: 'Inter-Medium',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   input: {
     flex: 1,
-    height: 52,
+    height: 46,
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 14,
     color: '#222D3A',
   },
   inputDetected: {
@@ -319,16 +300,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(90, 113, 228, 0.05)',
   },
   scanButton: {
-    width: 52,
-    height: 52,
+    width: 46,
+    height: 46,
     backgroundColor: '#FFF',
-    borderRadius: 16,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
   helper: {
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: 11,
     color: '#8494A9',
     marginTop: 4,
   },
@@ -336,30 +317,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 8,
+    marginTop: 6,
     backgroundColor: 'rgba(228, 90, 90, 0.1)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 8,
   },
   errorText: {
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: 11,
     color: '#E45A5A',
   },
   continueButton: {
-    height: 56,
+    height: 50,
     backgroundColor: '#5A71E4',
-    borderRadius: 16,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 16,
+    marginTop: 12,
   },
   continueButtonText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 15,
     color: '#FFF',
   },
 });
