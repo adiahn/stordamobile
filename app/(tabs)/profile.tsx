@@ -3,50 +3,54 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const MENU_ITEMS = [
   {
     id: 'personal-info',
-    icon: 'user',
+    icon: 'user' as const,
     title: 'Personal Information',
     description: 'Manage your personal details',
-    screen: '/profile/personal-info',
+    screen: '/profile/personal-info' as const,
   },
   {
     id: 'security',
-    icon: 'shield',
+    icon: 'shield' as const,
     title: 'Security',
     description: 'Password and authentication',
-    screen: '/profile/security',
+    screen: '/profile/security' as const,
   },
   {
     id: 'notifications',
-    icon: 'bell',
+    icon: 'bell' as const,
     title: 'Notifications',
     description: 'Configure alert preferences',
-    screen: '/profile/notifications',
+    screen: '/profile/notifications' as const,
   },
   {
     id: 'help',
-    icon: 'help-circle',
+    icon: 'help-circle' as const,
     title: 'Help & Support',
     description: 'Get help with Storda',
-    screen: '/profile/help',
+    screen: '/profile/help' as const,
   },
   {
     id: 'about',
-    icon: 'info',
+    icon: 'info' as const,
     title: 'About',
     description: 'Terms, privacy, and app info',
-    screen: '/profile/about',
+    screen: '/profile/about' as const,
   },
 ];
 
+type MenuScreenPath = typeof MENU_ITEMS[number]['screen'];
+
 export default function ProfileScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [profileData, setProfileData] = useState({
     name: 'Adnan Asif',
     email: 'adnanasif@gmail.com',
@@ -57,14 +61,27 @@ export default function ProfileScreen() {
     memberSince: '2023'
   });
 
-  const handleMenuItemPress = (screen) => {
+  useEffect(() => {
+    try {
+      if (params.updatedProfile) {
+        const data = JSON.parse(params.updatedProfile as string);
+        setProfileData(prevData => ({
+          ...prevData,
+          ...data
+        }));
+      }
+    } catch (e) {
+      console.error("Error parsing updated profile data:", e);
+    }
+  }, [params.updatedProfile]);
+
+  const handleMenuItemPress = (screen: MenuScreenPath) => {
     if (screen.startsWith('/profile/')) {
       router.push({
         pathname: screen,
         params: { profileData: JSON.stringify(profileData) }
       });
     } else {
-      // Handle other navigation or actions
       Alert.alert('Coming Soon', 'This feature will be available in the next update.');
     }
   };
@@ -100,11 +117,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.container}>
       <Animated.View 
         style={styles.header}
         entering={FadeInUp.duration(500).delay(100)}
@@ -112,95 +125,101 @@ export default function ProfileScreen() {
         <Text style={styles.headerTitle}>Profile</Text>
       </Animated.View>
 
-      <Animated.View 
-        style={styles.profileCard}
-        entering={FadeInUp.duration(500).delay(200)}
+      <ScrollView 
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        <LinearGradient
-          colors={['#5A71E4', '#8C3BFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.profileGradient}
+        <Animated.View 
+          style={styles.profileCard}
+          entering={FadeInUp.duration(500).delay(200)}
         >
-          <View style={styles.profileContent}>
-            <View style={styles.profileImageContainer}>
-              <Image
-                source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
-                style={styles.profileImage}
-              />
-              <Pressable 
-                style={styles.profileImageEditButton}
-                onPress={handleEditProfile}
-              >
-                <Feather name="edit-2" size={12} color="#5A71E4" />
-              </Pressable>
-            </View>
-            <Text style={styles.profileName}>{profileData.name}</Text>
-            <Text style={styles.profileEmail}>{profileData.email}</Text>
-            <AnimatedPressable 
-              style={styles.editButton}
-              onPress={handleEditProfile}
-            >
-              <Text style={styles.editButtonText}>Edit Profile</Text>
-            </AnimatedPressable>
-          </View>
-        </LinearGradient>
-      </Animated.View>
-
-      <Animated.View 
-        style={styles.statsContainer}
-        entering={FadeInUp.duration(500).delay(300)}
-      >
-        <View style={styles.statsItem}>
-          <Text style={styles.statsNumber}>{profileData.devices}</Text>
-          <Text style={styles.statsLabel}>Devices</Text>
-        </View>
-        <View style={styles.statsDivider} />
-        <View style={styles.statsItem}>
-          <Text style={styles.statsNumber}>{profileData.transfers}</Text>
-          <Text style={styles.statsLabel}>Transfers</Text>
-        </View>
-        <View style={styles.statsDivider} />
-        <View style={styles.statsItem}>
-          <Text style={styles.statsNumber}>{new Date().getFullYear() - parseInt(profileData.memberSince)}</Text>
-          <Text style={styles.statsLabel}>Year</Text>
-        </View>
-      </Animated.View>
-
-      <Animated.View 
-        style={styles.menuContainer}
-        entering={FadeInUp.duration(500).delay(400)}
-      >
-        <Text style={styles.menuTitle}>Settings</Text>
-        
-        {MENU_ITEMS.map((item, index) => (
-          <AnimatedPressable 
-            key={item.id} 
-            style={styles.menuItem}
-            entering={FadeInUp.duration(300).delay(500 + index * 100)}
-            onPress={() => handleMenuItemPress(item.screen)}
+          <LinearGradient
+            colors={['#5A71E4', '#8C3BFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.profileGradient}
           >
-            <View style={styles.menuIconContainer}>
-              <Feather name={item.icon} size={20} color="#5A71E4" />
+            <View style={styles.profileContent}>
+              <View style={styles.profileHeader}>
+                <View style={styles.profileImageContainer}>
+                  <Image
+                    source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+                    style={styles.profileImage}
+                  />
+                  <Pressable 
+                    style={styles.profileImageEditButton}
+                    onPress={handleEditProfile}
+                  >
+                    <Feather name="edit-2" size={12} color="#5A71E4" />
+                  </Pressable>
+                </View>
+                <View style={styles.profileInfo}>
+                  <Text style={styles.profileName}>{profileData.name}</Text>
+                  <Text style={styles.profileEmail}>{profileData.email}</Text>
+                  <AnimatedPressable 
+                    style={styles.editButton}
+                    onPress={handleEditProfile}
+                  >
+                    <Text style={styles.editButtonText}>Edit Profile</Text>
+                  </AnimatedPressable>
+                </View>
+              </View>
+              
+              <View style={styles.statsContainer}>
+                <View style={styles.statsItem}>
+                  <Text style={styles.statsNumber}>{profileData.devices}</Text>
+                  <Text style={styles.statsLabel}>Devices</Text>
+                </View>
+                <View style={styles.statsDivider} />
+                <View style={styles.statsItem}>
+                  <Text style={styles.statsNumber}>{profileData.transfers}</Text>
+                  <Text style={styles.statsLabel}>Transfers</Text>
+                </View>
+                <View style={styles.statsDivider} />
+                <View style={styles.statsItem}>
+                  <Text style={styles.statsNumber}>{new Date().getFullYear() - parseInt(profileData.memberSince)}</Text>
+                  <Text style={styles.statsLabel}>Year</Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuItemTitle}>{item.title}</Text>
-              <Text style={styles.menuItemDescription}>{item.description}</Text>
-            </View>
-            <Feather name="chevron-right" size={20} color="#8494A9" />
-          </AnimatedPressable>
-        ))}
-      </Animated.View>
+          </LinearGradient>
+        </Animated.View>
 
-      <AnimatedPressable 
-        style={styles.logoutButton}
-        entering={FadeInUp.duration(500).delay(1000)}
-        onPress={handleLogout}
-      >
-        <Feather name="log-out" size={20} color="#E45A5A" />
-        <Text style={styles.logoutText}>Log Out</Text>
-      </AnimatedPressable>
-    </ScrollView>
+        <Animated.View 
+          style={styles.menuContainer}
+          entering={FadeInUp.duration(500).delay(400)}
+        >
+          <Text style={styles.menuTitle}>Settings</Text>
+          
+          <View style={styles.menuGrid}>
+            {MENU_ITEMS.map((item, index) => (
+              <AnimatedPressable 
+                key={item.id} 
+                style={styles.menuItem}
+                entering={FadeInUp.duration(300).delay(500 + index * 100)}
+                onPress={() => handleMenuItemPress(item.screen)}
+              >
+                <View style={styles.menuIconContainer}>
+                  <Feather name={item.icon} size={20} color="#5A71E4" />
+                </View>
+                <View style={styles.menuContent}>
+                  <Text style={styles.menuItemTitle}>{item.title}</Text>
+                </View>
+              </AnimatedPressable>
+            ))}
+          </View>
+        </Animated.View>
+
+        <AnimatedPressable 
+          style={styles.logoutButton}
+          entering={FadeInUp.duration(500).delay(1000)}
+          onPress={handleLogout}
+        >
+          <Feather name="log-out" size={20} color="#E45A5A" />
+          <Text style={styles.logoutText}>Log Out</Text>
+        </AnimatedPressable>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -208,13 +227,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',
+    paddingTop: 50,
   },
   content: {
     padding: 16,
-    paddingTop: 50,
-    paddingBottom: 80,
+    paddingBottom: 30,
   },
   header: {
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
   headerTitle: {
@@ -225,7 +245,7 @@ const styles = StyleSheet.create({
   profileCard: {
     borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: 20,
     ...Platform.select({
       ios: {
         shadowColor: '#8C3BFF',
@@ -242,19 +262,26 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   profileContent: {
-    padding: 20,
+    padding: 16,
+  },
+  profileHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginRight: 14,
   },
   profileImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     borderWidth: 3,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  profileInfo: {
+    flex: 1,
   },
   profileImageEditButton: {
     position: 'absolute',
@@ -280,7 +307,7 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontFamily: 'Inter-Bold',
-    fontSize: 22,
+    fontSize: 20,
     color: '#FFFFFF',
     marginBottom: 4,
   },
@@ -288,9 +315,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   editButton: {
+    alignSelf: 'flex-start',
     paddingVertical: 6,
     paddingHorizontal: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -305,21 +333,9 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 12,
   },
   statsItem: {
     flex: 1,
@@ -327,23 +343,23 @@ const styles = StyleSheet.create({
   },
   statsNumber: {
     fontFamily: 'Inter-Bold',
-    fontSize: 20,
-    color: '#222D3A',
-    marginBottom: 4,
+    fontSize: 18,
+    color: '#FFFFFF',
+    marginBottom: 2,
   },
   statsLabel: {
     fontFamily: 'Inter-Regular',
-    fontSize: 13,
-    color: '#8494A9',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   statsDivider: {
     width: 1,
     height: '80%',
-    backgroundColor: 'rgba(132, 148, 169, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignSelf: 'center',
   },
   menuContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   menuTitle: {
     fontFamily: 'Inter-SemiBold',
@@ -351,13 +367,18 @@ const styles = StyleSheet.create({
     color: '#222D3A',
     marginBottom: 12,
   },
-  menuItem: {
+  menuGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  menuItem: {
+    width: '48%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     marginBottom: 10,
+    alignItems: 'center',
   },
   menuIconContainer: {
     width: 36,
@@ -366,21 +387,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginBottom: 8,
   },
   menuContent: {
-    flex: 1,
+    alignItems: 'center',
   },
   menuItemTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#222D3A',
-    marginBottom: 2,
-  },
-  menuItemDescription: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: '#8494A9',
+    textAlign: 'center',
   },
   logoutButton: {
     flexDirection: 'row',
@@ -388,8 +404,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(228, 90, 90, 0.1)',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 30,
+    padding: 14,
+    marginBottom: 10,
   },
   logoutText: {
     fontFamily: 'Inter-SemiBold',
