@@ -1,30 +1,11 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
-
-const PAYMENT_METHODS = [
-  {
-    id: 1,
-    type: 'card',
-    name: 'Mastercard',
-    number: '•••• 4582',
-    icon: 'credit-card',
-    color: '#222D3A',
-  },
-  {
-    id: 2,
-    type: 'bank',
-    name: 'First Bank',
-    number: '•••• 7290',
-    icon: 'home',
-    color: '#E45A5A',
-  },
-];
 
 const TRANSACTIONS = [
   {
@@ -92,92 +73,16 @@ export default function WalletScreen() {
               </View>
               <Text style={styles.actionButtonText}>Top Up</Text>
             </AnimatedPressable>
-            
-            <AnimatedPressable style={styles.balanceActionButton}>
-              <View style={styles.actionIconContainer}>
-                <Feather name="arrow-up-right" size={18} color="#FFF" />
-              </View>
-              <Text style={styles.actionButtonText}>Send</Text>
-            </AnimatedPressable>
           </View>
         </View>
       </AnimatedLinearGradient>
-
-      <Animated.View 
-        style={styles.paymentMethodsContainer}
-        entering={FadeInUp.duration(500).delay(300)}
-      >
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Payment Methods</Text>
-          <TouchableOpacity style={styles.addButton}>
-            <Feather name="plus" size={16} color="#5A71E4" />
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.cardsContainer}
-        >
-          {PAYMENT_METHODS.map((method) => (
-            <View key={method.id} style={styles.cardItem}>
-              <View style={styles.cardHeader}>
-                <View style={[styles.cardIconContainer, { backgroundColor: method.color }]}>
-                  <Feather name={method.icon as any} size={16} color="#FFF" />
-                </View>
-                <Feather name="more-vertical" size={18} color="#8494A9" />
-              </View>
-              <Text style={styles.cardName}>{method.name}</Text>
-              <Text style={styles.cardNumber}>{method.number}</Text>
-            </View>
-          ))}
-          
-          <TouchableOpacity style={styles.addCardButton}>
-            <View style={styles.addCardPlus}>
-              <Feather name="plus" size={24} color="#5A71E4" />
-            </View>
-            <Text style={styles.addCardText}>Add Payment Method</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </Animated.View>
-
-      <Animated.View 
-        style={styles.quickActionsContainer}
-        entering={FadeInUp.duration(500).delay(400)}
-      >
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        
-        <View style={styles.quickActions}>
-          <AnimatedPressable style={styles.quickActionButton}>
-            <View style={styles.quickActionIcon}>
-              <Feather name="credit-card" size={20} color="#5A71E4" />
-            </View>
-            <Text style={styles.quickActionText}>Pay Fees</Text>
-          </AnimatedPressable>
-          
-          <AnimatedPressable style={styles.quickActionButton}>
-            <View style={styles.quickActionIcon}>
-              <Feather name="refresh-cw" size={20} color="#5A71E4" />
-            </View>
-            <Text style={styles.quickActionText}>History</Text>
-          </AnimatedPressable>
-          
-          <AnimatedPressable style={styles.quickActionButton}>
-            <View style={styles.quickActionIcon}>
-              <Feather name="life-buoy" size={20} color="#5A71E4" />
-            </View>
-            <Text style={styles.quickActionText}>Support</Text>
-          </AnimatedPressable>
-        </View>
-      </Animated.View>
 
       <Animated.View 
         style={styles.transactionsContainer}
         entering={FadeInUp.duration(500).delay(500)}
       >
         <View style={styles.transactionsHeader}>
-          <Text style={styles.sectionTitle}>Transactions</Text>
+          <Text style={styles.sectionTitle}>Recent Transactions</Text>
           <AnimatedPressable 
             style={styles.viewAllButton}
             onPress={() => setShowAll(!showAll)}
@@ -277,7 +182,6 @@ const styles = StyleSheet.create({
   balanceActions: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
   },
   balanceActionButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -302,118 +206,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#FFFFFF',
   },
-  paymentMethodsContainer: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 13,
-    color: '#5A71E4',
-    marginLeft: 4,
-  },
-  cardsContainer: {
-    paddingRight: 16,
-  },
-  cardItem: {
-    width: 150,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  cardIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardName: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
-    color: '#222D3A',
-    marginBottom: 4,
-  },
-  cardNumber: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: '#8494A9',
-  },
-  addCardButton: {
-    width: 150,
-    backgroundColor: 'rgba(90, 113, 228, 0.05)',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: 'rgba(90, 113, 228, 0.3)',
-  },
-  addCardPlus: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(90, 113, 228, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  addCardText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
-    color: '#5A71E4',
-    textAlign: 'center',
-  },
-  quickActionsContainer: {
-    marginBottom: 24,
-  },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
     color: '#222D3A',
-    marginBottom: 12,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  quickActionButton: {
-    width: '31%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-  },
-  quickActionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(90, 113, 228, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  quickActionText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 13,
-    color: '#222D3A',
+    marginBottom: 0,
   },
   transactionsContainer: {
     backgroundColor: '#FFFFFF',
