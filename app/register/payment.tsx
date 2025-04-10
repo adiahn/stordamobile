@@ -1,5 +1,19 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Pressable,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard
+} from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
@@ -15,6 +29,10 @@ export default function PaymentPage() {
   const [cvv, setCvv] = useState('');
   const [nameOnCard, setNameOnCard] = useState('');
   const [saveCard, setSaveCard] = useState(false);
+
+  const expiryRef = useRef<TextInput | null>(null);
+  const cvvRef = useRef<TextInput | null>(null);
+  const nameRef = useRef<TextInput | null>(null);
 
   const formatCardNumber = (text: string) => {
     const formatted = text.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
@@ -64,172 +82,181 @@ export default function PaymentPage() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backButton}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Pressable
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <Feather name="arrow-left" size={18} color="#222D3A" />
+            </Pressable>
+            <Text style={styles.headerTitle}>Payment</Text>
+            <Text style={styles.subtitle}>Complete your device protection</Text>
+          </View>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Feather name="arrow-left" size={18} color="#222D3A" />
-          </Pressable>
-          <Text style={styles.title}>Payment</Text>
-          <Text style={styles.subtitle}>Complete your device protection</Text>
-        </View>
-
-        <Animated.View 
-          style={styles.deviceSummary}
-          entering={FadeInUp.duration(500).delay(200)}
-        >
-          <Text style={styles.summaryTitle}>Device Summary</Text>
-          
-          <View style={styles.deviceInfo}>
-            <View style={styles.deviceIconContainer}>
-              <Feather name="smartphone" size={22} color="#5A71E4" />
-            </View>
-            
-            <View style={styles.deviceDetails}>
-              <Text style={styles.deviceName}>{params.brand} {params.model}</Text>
-              <View style={styles.detailsGrid}>
-                {params.imei && (
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>IMEI</Text>
-                    <Text style={styles.detailValue}>{params.imei}</Text>
+            <View style={styles.deviceSummary}>
+              <Text style={styles.summaryTitle}>Device Summary</Text>
+              
+              <View style={styles.deviceInfo}>
+                <View style={styles.deviceIconContainer}>
+                  <Feather name="smartphone" size={22} color="#5A71E4" />
+                </View>
+                
+                <View style={styles.deviceDetails}>
+                  <Text style={styles.deviceName}>{params.brand} {params.model}</Text>
+                  <View style={styles.detailsGrid}>
+                    {params.imei && (
+                      <View style={styles.detailItem}>
+                        <Text style={styles.detailLabel}>IMEI</Text>
+                        <Text style={styles.detailValue}>{params.imei}</Text>
+                      </View>
+                    )}
+                    {params.storage && (
+                      <View style={styles.detailItem}>
+                        <Text style={styles.detailLabel}>Storage</Text>
+                        <Text style={styles.detailValue}>{params.storage}</Text>
+                      </View>
+                    )}
+                    {params.color && (
+                      <View style={styles.detailItem}>
+                        <Text style={styles.detailLabel}>Color</Text>
+                        <Text style={styles.detailValue}>{params.color}</Text>
+                      </View>
+                    )}
                   </View>
-                )}
-                {params.storage && (
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Storage</Text>
-                    <Text style={styles.detailValue}>{params.storage}</Text>
-                  </View>
-                )}
-                {params.color && (
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Color</Text>
-                    <Text style={styles.detailValue}>{params.color}</Text>
-                  </View>
-                )}
+                </View>
               </View>
             </View>
-          </View>
-        </Animated.View>
 
-        <Animated.View 
-          style={styles.pricingCard}
-          entering={FadeInUp.duration(500).delay(300)}
-        >
-          <Text style={styles.pricingTitle}>Protection Plan</Text>
-          
-          <View style={styles.planDetails}>
-            <View style={styles.planFeature}>
-              <Feather name="check" size={16} color="#30B050" />
-              <Text style={styles.planFeatureText}>Theft Protection</Text>
-            </View>
-            <View style={styles.planFeature}>
-              <Feather name="check" size={16} color="#30B050" />
-              <Text style={styles.planFeatureText}>Damage Protection</Text>
-            </View>
-            <View style={styles.planFeature}>
-              <Feather name="check" size={16} color="#30B050" />
-              <Text style={styles.planFeatureText}>24/7 Support</Text>
-            </View>
-          </View>
-          
-          <LinearGradient
-            colors={['rgba(90, 113, 228, 0.1)', 'rgba(90, 113, 228, 0.05)']}
-            style={styles.pricingRow}
-          >
-            <Text style={styles.pricingLabel}>Total Price</Text>
-            <Text style={styles.pricingValue}>$9.99 / month</Text>
-          </LinearGradient>
-        </Animated.View>
-
-        <Animated.View 
-          style={styles.paymentForm}
-          entering={FadeInUp.duration(500).delay(400)}
-        >
-          <Text style={styles.formLabel}>Payment Details</Text>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Card Number</Text>
-            <View style={styles.cardNumberInput}>
-              <TextInput
-                style={styles.input}
-                placeholder="1234 5678 9012 3456"
-                placeholderTextColor="#8494A9"
-                keyboardType="numeric"
-                value={cardNumber}
-                onChangeText={handleCardNumberChange}
-                maxLength={19}
-              />
-              <View style={styles.cardBrand}>
-                <Feather name="credit-card" size={16} color="#8494A9" />
+            <View style={styles.pricingCard}>
+              <Text style={styles.pricingTitle}>Protection Plan</Text>
+              
+              <View style={styles.planDetails}>
+                <View style={styles.planFeature}>
+                  <Feather name="check" size={16} color="#30B050" />
+                  <Text style={styles.planFeatureText}>Theft Protection</Text>
+                </View>
+                <View style={styles.planFeature}>
+                  <Feather name="check" size={16} color="#30B050" />
+                  <Text style={styles.planFeatureText}>Damage Protection</Text>
+                </View>
+                <View style={styles.planFeature}>
+                  <Feather name="check" size={16} color="#30B050" />
+                  <Text style={styles.planFeatureText}>24/7 Support</Text>
+                </View>
               </View>
+              
+              <LinearGradient
+                colors={['rgba(90, 113, 228, 0.1)', 'rgba(90, 113, 228, 0.05)']}
+                style={styles.pricingRow}
+              >
+                <Text style={styles.pricingLabel}>Total Price</Text>
+                <Text style={styles.pricingValue}>$9.99 / month</Text>
+              </LinearGradient>
             </View>
-          </View>
+
+            <View style={styles.paymentForm}>
+              <Text style={styles.formLabel}>Payment Details</Text>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Card Number</Text>
+                <View style={styles.cardNumberInput}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="1234 5678 9012 3456"
+                    placeholderTextColor="#8494A9"
+                    keyboardType="numeric"
+                    value={cardNumber}
+                    onChangeText={handleCardNumberChange}
+                    maxLength={19}
+                    returnKeyType="next"
+                    onSubmitEditing={() => expiryRef.current?.focus()}
+                  />
+                  <View style={styles.cardBrand}>
+                    <Feather name="credit-card" size={16} color="#8494A9" />
+                  </View>
+                </View>
+              </View>
+              
+              <View style={styles.formRow}>
+                <View style={[styles.inputGroup, {flex: 1}]}>
+                  <Text style={styles.inputLabel}>Expiry Date</Text>
+                  <TextInput
+                    ref={expiryRef}
+                    style={styles.input}
+                    placeholder="MM/YY"
+                    placeholderTextColor="#8494A9"
+                    keyboardType="numeric"
+                    value={expiryDate}
+                    onChangeText={handleExpiryDateChange}
+                    maxLength={5}
+                    returnKeyType="next"
+                    onSubmitEditing={() => cvvRef.current?.focus()}
+                  />
+                </View>
+                <View style={[styles.inputGroup, {flex: 1}]}>
+                  <Text style={styles.inputLabel}>CVV</Text>
+                  <TextInput
+                    ref={cvvRef}
+                    style={styles.input}
+                    placeholder="123"
+                    placeholderTextColor="#8494A9"
+                    keyboardType="numeric"
+                    value={cvv}
+                    onChangeText={setCvv}
+                    maxLength={3}
+                    returnKeyType="next"
+                    onSubmitEditing={() => nameRef.current?.focus()}
+                  />
+                </View>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Name on Card</Text>
+                <TextInput
+                  ref={nameRef}
+                  style={styles.input}
+                  placeholder="JOHN DOE"
+                  placeholderTextColor="#8494A9"
+                  value={nameOnCard}
+                  onChangeText={setNameOnCard}
+                  autoCapitalize="characters"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                />
+              </View>
+              
+              <Pressable 
+                style={styles.saveCardRow} 
+                onPress={() => setSaveCard(!saveCard)}
+              >
+                <View style={[styles.checkbox, saveCard && styles.checkboxChecked]}>
+                  {saveCard && <Feather name="check" size={12} color="#FFF" />}
+                </View>
+                <Text style={styles.saveCardText}>Save card for future payments</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
           
-          <View style={styles.formRow}>
-            <View style={[styles.inputGroup, {flex: 1}]}>
-              <Text style={styles.inputLabel}>Expiry Date</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="MM/YY"
-                placeholderTextColor="#8494A9"
-                keyboardType="numeric"
-                value={expiryDate}
-                onChangeText={handleExpiryDateChange}
-                maxLength={5}
-              />
-            </View>
-            <View style={[styles.inputGroup, {flex: 1}]}>
-              <Text style={styles.inputLabel}>CVV</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="123"
-                placeholderTextColor="#8494A9"
-                keyboardType="numeric"
-                value={cvv}
-                onChangeText={setCvv}
-                maxLength={3}
-                secureTextEntry
-              />
-            </View>
+          <View style={styles.footer}>
+            <Pressable style={styles.buyButton} onPress={handleSubmit}>
+              <Text style={styles.buyButtonText}>Complete Purchase</Text>
+              <Feather name="arrow-right" size={18} color="#FFF" />
+            </Pressable>
           </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Name on Card</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="John Smith"
-              placeholderTextColor="#8494A9"
-              value={nameOnCard}
-              onChangeText={setNameOnCard}
-            />
-          </View>
-          
-          <Pressable 
-            style={styles.saveCardRow} 
-            onPress={() => setSaveCard(!saveCard)}
-          >
-            <View style={[styles.checkbox, saveCard && styles.checkboxChecked]}>
-              {saveCard && <Feather name="check" size={12} color="#FFF" />}
-            </View>
-            <Text style={styles.saveCardText}>Save card for future payments</Text>
-          </Pressable>
-        </Animated.View>
-      </ScrollView>
-      
-      <View style={styles.footer}>
-        <Pressable style={styles.buyButton} onPress={handleSubmit}>
-          <Text style={styles.buyButtonText}>Complete Purchase</Text>
-          <Feather name="arrow-right" size={18} color="#FFF" />
-        </Pressable>
-      </View>
-    </View>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -241,7 +268,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  content: {
+  scrollContent: {
     padding: 14,
     paddingTop: 45,
     paddingBottom: 80,
@@ -258,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
-  title: {
+  headerTitle: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 22,
     color: '#222D3A',

@@ -27,8 +27,8 @@ interface Device {
 
 // User profile information
 const USER_PROFILE = {
-  name: "John Doe",
-  email: "john@storda.ng",
+  name: "Adnan Mukhtar",
+  email: "adnanmukhtar@gmail.com",
   phone: "+2347011313752",
   country: "Nigeria"
 };
@@ -48,12 +48,11 @@ export default function HomeScreen() {
     device?: Device;
   } | null>(null);
   
-  // Combine store devices with the initial hardcoded ones if needed
   const [devices, setDevices] = useState<Device[]>([
     {
       name: 'iPhone 13 Pro',
       imei: '3121321122112',
-      macAddress: '30291masmasdmas',
+      macAddress: '3022-d312-33fc-2111',
       id: 'SRD-21112',
       ownership: true,
       key: 1,
@@ -64,8 +63,8 @@ export default function HomeScreen() {
     {
       name: 'Samsung Z Fold 3',
       imei: '3121321122112',
-      id: 'SRD-21112',
-      macAddress: '30291masmdsdmas',
+      id: 'SRD-21113',
+      macAddress: '3300-e312-33fq-2v12',
       ownership: false,
       key: 3,
       status: 'active'
@@ -113,19 +112,16 @@ export default function HomeScreen() {
       if (selectedDeviceAction.type === 'transfer' && selectedDeviceAction.device) {
         handleTransferDevice(selectedDeviceAction.device);
       } else if (selectedDeviceAction.type === 'remove' && selectedDeviceAction.device) {
-        // Handle device removal
         const updatedDevices = devices.filter(d => d.key !== selectedDeviceAction.device?.key);
         setDevices(updatedDevices);
         
-        // Also remove from store if present
         if (useDeviceStore.getState().removeDevice) {
           useDeviceStore.getState().removeDevice(selectedDeviceAction.device.key);
         }
         
         Alert.alert("Device Removed", "The device has been removed successfully.");
       } else if (selectedDeviceAction.type === 'report' && selectedDeviceAction.device) {
-        // Navigate to report page
-        router.push({
+          router.push({
           pathname: '/view/[Id]',
           params: { Id: selectedDeviceAction.device.id }
         });
@@ -137,11 +133,15 @@ export default function HomeScreen() {
 
   const initiateAction = (type: 'transfer' | 'remove' | 'report', device?: Device) => {
     setSelectedDeviceAction({ type, device });
-    setShowPinModal(true);
+    
+    if (type === 'transfer' && device) {
+      handleTransferDevice(device);
+    } else {
+      setShowPinModal(true);
+    }
   };
 
   const handleTransferDevice = (device: Device) => {
-    // Convert local Device to StoreDevice for the store
     const storeDevice: StoreDevice = {
       name: device.name,
       imei: device.imei,
@@ -157,15 +157,12 @@ export default function HomeScreen() {
     };
     
     useDeviceStore.getState().setSelectedDevice(storeDevice);
-    setShowTransferModal(false);
     router.push(`/devices/dev_1`);
   };
 
-  // Display only the first 3 devices unless "See all" is clicked
   const displayDevices = showAllDevices ? devices : devices.slice(0, 3);
   const hasMoreDevices = devices.length > 3;
 
-  // Count active devices (not transferred, lost, or stolen)
   const activeDeviceCount = devices.filter(
     device => device.status !== 'transferred' && device.status !== 'lost' && device.status !== 'stolen'
   ).length;
@@ -203,21 +200,10 @@ export default function HomeScreen() {
             </View>
           </View>
         </LinearGradient>
-
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
 
           <View style={styles.actionButtons}>
-            <Pressable
-              onPress={() => initiateAction('transfer')}
-              style={[styles.actionButton]}
-            >
-              <View style={styles.actionIconContainer}>
-                <Feather name="send" size={16} color="#5A71E4" />
-              </View>
-              <Text style={styles.actionButtonText}>Transfer</Text>
-            </Pressable>
-
             <Pressable
               onPress={() => {
                 router.push(`/register`);
@@ -225,9 +211,9 @@ export default function HomeScreen() {
               style={[styles.actionButton]}
             >
               <View style={styles.actionIconContainer}>
-                <Feather name="plus" size={16} color="#5A71E4" />
+                <Feather name="plus" size={18} color="#5A71E4" />
               </View>
-              <Text style={styles.actionButtonText}>Add</Text>
+              <Text style={styles.actionButtonText}>Add Device</Text>
             </Pressable>
             
             <Pressable
@@ -235,9 +221,9 @@ export default function HomeScreen() {
               style={[styles.actionButton]}
             >
               <View style={styles.actionIconContainer}>
-                <Feather name="smartphone" size={16} color="#5A71E4" />
+                <Feather name="search" size={18} color="#5A71E4" />
               </View>
-              <Text style={styles.actionButtonText}>View All</Text>
+              <Text style={styles.actionButtonText}>Search Device</Text>
             </Pressable>
           </View>
         </View>
@@ -364,7 +350,7 @@ export default function HomeScreen() {
                 <Pressable
                   key={device.key}
                   style={styles.modalDeviceItem}
-                  onPress={() => initiateAction('transfer', device)}
+                  onPress={() => handleTransferDevice(device)}
                 >
                   <View style={styles.modalDeviceIcon}>
                     <Feather name="smartphone" size={18} color="#5A71E4" />
@@ -549,24 +535,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   actionButton: {
-    width: '23%',
+    width: '48%',
     backgroundColor: '#FFFFFF',
-    padding: 10,
+    padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(132, 148, 169, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   actionIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(90, 113, 228, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   actionButtonText: {
     fontFamily: 'Inter-Medium',
-    fontSize: 12,
+    fontSize: 14,
     color: '#222D3A',
     textAlign: 'center',
   },

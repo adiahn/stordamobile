@@ -7,11 +7,11 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 export default function PersonalInfoScreen() {
   const params = useLocalSearchParams();
   const [profileData, setProfileData] = useState({
-    name: 'Adnan Asif',
-    email: 'adnanasif@gmail.com',
-    phone: '+1 234 567 8901',
-    address: 'New York, USA',
-    memberSince: '2023'
+    name: 'Adnan Mukhtar',
+    email: 'adnanmukhtar@gmail.com',
+    phone: '+2347011313752',
+    address: 'No 123, Main Street, Lagos, Nigeria',
+    memberSince: '2023-01-01'
   });
 
   useEffect(() => {
