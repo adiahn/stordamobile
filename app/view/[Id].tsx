@@ -1,10 +1,10 @@
 import { useLocalSearchParams, router } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { useDeviceStore } from '../store/store';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -37,6 +37,13 @@ export default function DeviceDetailsScreen() {
     status: 'active',
     key: Date.now() // Add a key for the fallback device
   };
+
+  // Automatically dismiss keyboard when PIN is 4 digits
+  useEffect(() => {
+    if (pin.length === 4) {
+      Keyboard.dismiss();
+    }
+  }, [pin]);
 
   const handlePinSubmit = () => {
     if (pin === USER_PIN) {
@@ -177,226 +184,240 @@ export default function DeviceDetailsScreen() {
   };
 
   return (
-    <ScrollView 
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView 
+      style={{flex: 1}} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
-      <View style={styles.header}>
-        <AnimatedPressable 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Feather name="arrow-left" size={18} color="#222D3A" />
-        </AnimatedPressable>
-      </View>
-
-      <Animated.View 
-        style={styles.deviceCard}
-        entering={FadeInUp.duration(500).delay(100)}
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <LinearGradient
-          colors={['#5A71E4', '#8C3BFF']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.deviceGradient}
-        >
-          <View style={styles.deviceIcon}>
-            <Feather name="smartphone" size={24} color="#FFF" />
-          </View>
-          <Text style={styles.deviceName}>{device.name}</Text>
-          <View style={styles.deviceStatus}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
-              <Text style={styles.statusText}>
-                {getStatusText()}
-              </Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </Animated.View>
-
-      <Animated.View 
-        style={styles.detailsContainer}
-        entering={FadeInUp.duration(500).delay(200)}
-      >
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Device Information</Text>
-          <Pressable onPress={toggleExpand} style={styles.expandButton}>
-            <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color="#5A71E4" />
-          </Pressable>
-        </View>
-        
-        <View style={styles.detailCard}>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Device ID</Text>
-            <Text style={styles.detailValue}>{device.id}</Text>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>IMEI Number</Text>
-            <Text style={styles.detailValue}>{device.imei}</Text>
-          </View>
-          
-          {isExpanded && (
-            <>
-              <View style={styles.divider} />
-              
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>MAC Address</Text>
-                <Text style={styles.detailValue}>{device.macAddress}</Text>
-              </View>
-
-              {device.brand && (
-                <>
-                  <View style={styles.divider} />
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Brand</Text>
-                    <Text style={styles.detailValue}>{device.brand}</Text>
-                  </View>
-                </>
-              )}
-
-              {device.storage && (
-                <>
-                  <View style={styles.divider} />
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Storage</Text>
-                    <Text style={styles.detailValue}>{device.storage}</Text>
-                  </View>
-                </>
-              )}
-
-              {device.color && (
-                <>
-                  <View style={styles.divider} />
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Color</Text>
-                    <Text style={styles.detailValue}>{device.color}</Text>
-                  </View>
-                </>
-              )}
-
-              {device.registrationDate && (
-                <>
-                  <View style={styles.divider} />
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Registration Date</Text>
-                    <Text style={styles.detailValue}>
-                      {new Date(device.registrationDate).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </Text>
-                  </View>
-                </>
-              )}
-            </>
-          )}
-        </View>
-      </Animated.View>
-
-      <Animated.View
-        style={styles.actionsContainer}
-        entering={FadeInUp.duration(500).delay(300)}
-      >
-        <View style={styles.actionRow}>
-          {(device.status !== 'transferred' && device.ownership) && (
-            <AnimatedPressable
-              onPress={handleReportDevice}
-              style={styles.actionButton}
-            >
-              <View style={[styles.actionIcon, styles.reportIcon]}>
-                <Feather name="alert-triangle" size={16} color="#FF9A00" />
-              </View>
-              <Text style={styles.actionText}>Report</Text>
-            </AnimatedPressable>
-          )}
-          
-          {(device.status !== 'transferred' && device.ownership) && (
-            <AnimatedPressable
-              onPress={handleTransferDevice}
-              style={styles.actionButton}
-            >
-              <View style={[styles.actionIcon, styles.transferIcon]}>
-                <Feather name="send" size={16} color="#5A71E4" />
-              </View>
-              <Text style={styles.actionText}>Transfer</Text>
-            </AnimatedPressable>
-          )}
-          
-          <AnimatedPressable
-            onPress={handleDeleteDevice}
-            style={styles.actionButton}
+        <View style={styles.header}>
+          <AnimatedPressable 
+            style={styles.backButton}
+            onPress={() => router.back()}
           >
-            <View style={[styles.actionIcon, styles.deleteIcon]}>
-              <Feather name="trash-2" size={16} color="#E45A5A" />
-            </View>
-            <Text style={styles.actionText}>Remove</Text>
+            <Feather name="arrow-left" size={18} color="#222D3A" />
           </AnimatedPressable>
         </View>
-      </Animated.View>
 
-      {/* PIN Authentication Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={showPinModal}
-        onRequestClose={() => {
-          setShowPinModal(false);
-          setPin('');
-          setSelectedAction(null);
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.pinModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Enter PIN</Text>
-              <Pressable 
-                onPress={() => {
-                  setShowPinModal(false);
-                  setPin('');
-                  setSelectedAction(null);
-                }}
-              >
-                <Feather name="x" size={20} color="#222D3A" />
-              </Pressable>
+        <Animated.View 
+          style={styles.deviceCard}
+          entering={FadeInUp.duration(500).delay(100)}
+        >
+          <LinearGradient
+            colors={['#5A71E4', '#8C3BFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.deviceGradient}
+          >
+            <View style={styles.deviceIcon}>
+              <Feather name="smartphone" size={24} color="#FFF" />
             </View>
-            
-            <Text style={styles.pinDescription}>
-              {selectedAction?.type === 'transfer' ? 'Please enter your PIN to transfer this device' :
-               selectedAction?.type === 'remove' ? 'Please enter your PIN to remove this device' :
-               selectedAction?.type === 'report' && selectedAction?.reportType === 'lost' ? 'Please enter your PIN to report this device as lost' :
-               selectedAction?.type === 'report' && selectedAction?.reportType === 'stolen' ? 'Please enter your PIN to report this device as stolen' :
-               'Please enter your PIN to continue'}
-            </Text>
-            
-            <TextInput
-              style={styles.pinInput}
-              value={pin}
-              onChangeText={setPin}
-              placeholder="Enter 4-digit PIN"
-              keyboardType="number-pad"
-              maxLength={4}
-              secureTextEntry
-              placeholderTextColor="#8494A9"
-            />
-            
-            <Pressable 
-              style={[styles.pinSubmitButton, pin.length === 4 && styles.pinSubmitButtonActive]}
-              onPress={handlePinSubmit}
-              disabled={pin.length !== 4}
-            >
-              <Text style={[styles.pinSubmitText, pin.length === 4 && styles.pinSubmitTextActive]}>
-                Verify
-              </Text>
+            <Text style={styles.deviceName}>{device.name}</Text>
+            <View style={styles.deviceStatus}>
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
+                <Text style={styles.statusText}>
+                  {getStatusText()}
+                </Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+
+        <Animated.View 
+          style={styles.detailsContainer}
+          entering={FadeInUp.duration(500).delay(200)}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Device Information</Text>
+            <Pressable onPress={toggleExpand} style={styles.expandButton}>
+              <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color="#5A71E4" />
             </Pressable>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+          
+          <View style={styles.detailCard}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Device ID</Text>
+              <Text style={styles.detailValue}>{device.id}</Text>
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>IMEI Number</Text>
+              <Text style={styles.detailValue}>{device.imei}</Text>
+            </View>
+            
+            {isExpanded && (
+              <>
+                <View style={styles.divider} />
+                
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>MAC Address</Text>
+                  <Text style={styles.detailValue}>{device.macAddress}</Text>
+                </View>
+
+                {device.brand && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Brand</Text>
+                      <Text style={styles.detailValue}>{device.brand}</Text>
+                    </View>
+                  </>
+                )}
+
+                {device.storage && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Storage</Text>
+                      <Text style={styles.detailValue}>{device.storage}</Text>
+                    </View>
+                  </>
+                )}
+
+                {device.color && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Color</Text>
+                      <Text style={styles.detailValue}>{device.color}</Text>
+                    </View>
+                  </>
+                )}
+
+                {device.registrationDate && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Registration Date</Text>
+                      <Text style={styles.detailValue}>
+                        {new Date(device.registrationDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        </Animated.View>
+
+        <Animated.View
+          style={styles.actionsContainer}
+          entering={FadeInUp.duration(500).delay(300)}
+        >
+          <View style={styles.actionRow}>
+            {(device.status !== 'transferred' && device.ownership) && (
+              <AnimatedPressable
+                onPress={handleReportDevice}
+                style={styles.actionButton}
+              >
+                <View style={[styles.actionIcon, styles.reportIcon]}>
+                  <Feather name="alert-triangle" size={16} color="#FF9A00" />
+                </View>
+                <Text style={styles.actionText}>Report</Text>
+              </AnimatedPressable>
+            )}
+            
+            {(device.status !== 'transferred' && device.ownership) && (
+              <AnimatedPressable
+                onPress={handleTransferDevice}
+                style={styles.actionButton}
+              >
+                <View style={[styles.actionIcon, styles.transferIcon]}>
+                  <Feather name="send" size={16} color="#5A71E4" />
+                </View>
+                <Text style={styles.actionText}>Transfer</Text>
+              </AnimatedPressable>
+            )}
+            
+            <AnimatedPressable
+              onPress={handleDeleteDevice}
+              style={styles.actionButton}
+            >
+              <View style={[styles.actionIcon, styles.deleteIcon]}>
+                <Feather name="trash-2" size={16} color="#E45A5A" />
+              </View>
+              <Text style={styles.actionText}>Remove</Text>
+            </AnimatedPressable>
+          </View>
+        </Animated.View>
+
+        <Modal
+          visible={showPinModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            setShowPinModal(false);
+            setPin('');
+            setSelectedAction(null);
+          }}
+        >
+          <KeyboardAvoidingView 
+            style={{flex: 1}} 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.pinModalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Enter PIN</Text>
+                  <Pressable 
+                    onPress={() => {
+                      setShowPinModal(false);
+                      setPin('');
+                      setSelectedAction(null);
+                    }}
+                  >
+                    <Feather name="x" size={20} color="#222D3A" />
+                  </Pressable>
+                </View>
+                
+                <Text style={styles.pinDescription}>
+                  {selectedAction?.type === 'transfer' ? 'Please enter your PIN to transfer this device' :
+                   selectedAction?.type === 'remove' ? 'Please enter your PIN to remove this device' :
+                   selectedAction?.type === 'report' && selectedAction?.reportType === 'lost' ? 'Please enter your PIN to report this device as lost' :
+                   selectedAction?.type === 'report' && selectedAction?.reportType === 'stolen' ? 'Please enter your PIN to report this device as stolen' :
+                   'Please enter your PIN to continue'}
+                </Text>
+                
+                <TextInput
+                  style={styles.pinInput}
+                  value={pin}
+                  onChangeText={(text) => {
+                    // Only allow digits and limit to 4 characters
+                    const cleanedText = text.replace(/[^0-9]/g, '').slice(0, 4);
+                    setPin(cleanedText);
+                  }}
+                  placeholder="Enter 4-digit PIN"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  secureTextEntry
+                  placeholderTextColor="#8494A9"
+                />
+                
+                <Pressable 
+                  style={[styles.pinSubmitButton, pin.length === 4 && styles.pinSubmitButtonActive]}
+                  onPress={handlePinSubmit}
+                  disabled={pin.length !== 4}
+                >
+                  <Text style={[styles.pinSubmitText, pin.length === 4 && styles.pinSubmitTextActive]}>
+                    Verify
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

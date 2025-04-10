@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, FlatList, Keyboard } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,7 +25,9 @@ export default function DevicesScreen() {
       registrationDate: '2024-02-01',
       status: 'active',
       storage: '128GB',
-      color: 'Sierra Blue'
+      color: 'Sierra Blue',
+      registeredBy: 'John Doe',
+      currentOwner: 'John Doe'
     },
     {
       name: 'Samsung Galaxy S22',
@@ -35,9 +37,11 @@ export default function DevicesScreen() {
       ownership: true,
       key: 101,
       registrationDate: '2024-02-15',
-      status: 'active',
+      status: 'transferred',
       storage: '256GB',
-      color: 'Phantom Black'
+      color: 'Phantom Black',
+      registeredBy: 'John Doe',
+      currentOwner: 'Jane Smith'
     }
   ];
   
@@ -200,6 +204,16 @@ export default function DevicesScreen() {
                           <Text style={styles.deviceChipText}>{item.color}</Text>
                         </View>
                       )}
+                    </View>
+                    <View style={styles.ownershipInfo}>
+                      <Text style={styles.ownershipText}>
+                        <Text style={styles.ownershipLabel}>Registered by: </Text>
+                        {item.registeredBy || 'Unknown'}
+                      </Text>
+                      <Text style={styles.ownershipText}>
+                        <Text style={styles.ownershipLabel}>Current owner: </Text>
+                        {item.currentOwner || (item.status === 'transferred' ? 'Transferred' : item.registeredBy || 'Unknown')}
+                      </Text>
                     </View>
                   </View>
                   
@@ -441,6 +455,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
+    marginBottom: 8,
   },
   deviceImei: {
     fontFamily: 'Inter-Regular',
@@ -458,6 +473,19 @@ const styles = StyleSheet.create({
   deviceChipText: {
     fontFamily: 'Inter-Medium',
     fontSize: 12,
+    color: '#5A71E4',
+  },
+  ownershipInfo: {
+    marginTop: 4,
+  },
+  ownershipText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#222D3A',
+    marginBottom: 2,
+  },
+  ownershipLabel: {
+    fontWeight: '600',
     color: '#5A71E4',
   },
   deviceStatus: {

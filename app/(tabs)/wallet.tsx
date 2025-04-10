@@ -1,524 +1,283 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  Platform,
-  Alert,
-  TouchableWithoutFeedback,
-  Keyboard,
-  KeyboardAvoidingView,
-  TextInput,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { formatCurrency } from '../utils/formatters';
+import { Colors } from '../utils/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather, FontAwesome5 } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { formatCurrency, formatDate } from '../../utils/formatters';
-import { useTheme } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 
-// Transaction type definition
-interface Transaction {
+// Simplified transaction type
+type Transaction = {
   id: string;
-  title: string;
   amount: number;
   date: string;
   type: 'credit' | 'debit';
-  status: 'completed' | 'pending' | 'failed';
-  description?: string;
-}
+  description: string;
+};
 
-// Sample transactions data
+// Simplified recent transactions
 const TRANSACTIONS: Transaction[] = [
   {
     id: '1',
-    title: 'Wallet Top-up',
-    amount: 100,
-    date: '2023-08-01T10:30:00',
+    amount: 50,
+    date: '2023-11-15T10:30:00Z',
     type: 'credit',
-    status: 'completed',
-    description: 'Added funds via credit card ending in 4242'
+    description: 'Wallet Top-up',
   },
   {
     id: '2',
-    title: 'Phone Protection Payment',
-    amount: 45.99,
-    date: '2023-07-25T14:20:00',
+    amount: 9.99,
+    date: '2023-11-12T14:45:00Z',
     type: 'debit',
-    status: 'completed',
-    description: 'Monthly protection plan payment for iPhone 12 Pro'
+    description: 'Device Protection',
   },
   {
     id: '3',
-    title: 'Wallet Top-up',
-    amount: 200,
-    date: '2023-07-15T09:45:00',
-    type: 'credit',
-    status: 'completed',
-    description: 'Added funds via bank transfer'
-  },
-  {
-    id: '4',
-    title: 'Laptop Protection Payment',
-    amount: 59.99,
-    date: '2023-07-10T16:30:00',
-    type: 'debit',
-    status: 'completed',
-    description: 'Annual protection plan payment for MacBook Pro'
-  },
-  {
-    id: '5',
-    title: 'Referral Bonus',
     amount: 25,
-    date: '2023-07-05T11:15:00',
+    date: '2023-11-05T09:15:00Z',
     type: 'credit',
-    status: 'completed',
-    description: 'Bonus for referring John Smith'
-  }
+    description: 'Wallet Top-up',
+  },
 ];
 
 export default function WalletScreen() {
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const [showAll, setShowAll] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const balance = 65.01;
   
-  // Current wallet balance calculation
-  const balance = TRANSACTIONS.reduce((acc, transaction) => {
-    return transaction.type === 'credit'
-      ? acc + transaction.amount
-      : acc - transaction.amount;
-  }, 0);
-
-  // Filter transactions based on search
-  const filteredTransactions = searchQuery 
-    ? TRANSACTIONS.filter(t => 
-        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : TRANSACTIONS;
-
-  const displayedTransactions = showAll
-    ? filteredTransactions
-    : filteredTransactions.slice(0, 3);
-
+  // Show alert for top-up action
   const handleTopUp = () => {
     Alert.alert(
       'Top Up Wallet',
-      'This feature would allow you to add funds to your wallet.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Continue', onPress: () => console.log('Top up initiated') }
-      ]
+      'This feature will allow you to add funds to your wallet.',
+      [{ text: 'OK' }]
     );
   };
 
+  // Format date to be more readable
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
+  // Handle transaction item press
   const handleTransactionPress = (transaction: Transaction) => {
     Alert.alert(
-      transaction.title,
-      `${transaction.description}\nAmount: ${formatCurrency(transaction.amount)}\nDate: ${formatDate(transaction.date, 'long')}\nStatus: ${transaction.status}`,
-      [{ text: 'Close', style: 'cancel' }]
-    );
-  };
-
-  const renderTransactionItem = (transaction: Transaction, index: number) => {
-    const isCredit = transaction.type === 'credit';
-    return (
-      <Animated.View
-        key={transaction.id}
-        entering={FadeInDown.delay(index * 100).springify()}
-      >
-        <Pressable
-          style={[
-            styles.transactionItem,
-            index !== 0 && styles.transactionBorder,
-          ]}
-          onPress={() => handleTransactionPress(transaction)}
-        >
-          <View
-            style={[
-              styles.transactionIconContainer,
-              isCredit
-                ? styles.creditIconContainer
-                : styles.debitIconContainer,
-            ]}
-          >
-            <Feather
-              name={isCredit ? 'arrow-down-left' : 'arrow-up-right'}
-              size={18}
-              color={isCredit ? '#4CAF50' : '#F44336'}
-            />
-          </View>
-          <View style={styles.transactionDetails}>
-            <Text style={[styles.transactionTitle, { color: colors.text }]}>
-              {transaction.title}
-            </Text>
-            <Text style={styles.transactionDate}>
-              {formatDate(transaction.date, 'relative')}
-            </Text>
-          </View>
-          <View style={styles.transactionAmount}>
-            <Text
-              style={[
-                styles.amountText,
-                { color: isCredit ? '#4CAF50' : '#F44336' }
-              ]}
-            >
-              {isCredit ? '+' : '-'}{formatCurrency(transaction.amount)}
-            </Text>
-            <Text style={[styles.statusText, { color: colors.text }]}>
-              {transaction.status}
-            </Text>
-          </View>
-        </Pressable>
-      </Animated.View>
+      'Transaction Details',
+      `Amount: ${formatCurrency(transaction.amount)}\nDate: ${formatDate(transaction.date)}\nType: ${transaction.type}\nDescription: ${transaction.description}`,
+      [{ text: 'OK' }]
     );
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Wallet</Text>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Balance Card */}
+        <Animated.View
+          entering={FadeInUp.delay(100).duration(400)}
+          style={styles.balanceContainer}
+        >
+          <LinearGradient
+            colors={[Colors.primary, '#8C3BFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.balanceCard}
           >
-            <View style={styles.header}>
-              <Text style={[styles.screenTitle, { color: colors.text }]}>Wallet</Text>
+            <View style={styles.balanceSection}>
+              <Text style={styles.balanceLabel}>Current Balance</Text>
+              <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
             </View>
+            <Pressable style={styles.topUpButton} onPress={handleTopUp}>
+              <Feather name="plus" size={16} color="#FFFFFF" />
+              <Text style={styles.topUpText}>Top Up</Text>
+            </Pressable>
+          </LinearGradient>
+        </Animated.View>
 
-            {/* Balance Card */}
-            <Animated.View
-              style={[styles.balanceCard, { backgroundColor: colors.primary }]}
-              entering={FadeInDown.delay(100).springify()}
-            >
-              <BlurView
-                intensity={Platform.OS === 'ios' ? 50 : 100}
-                tint="dark"
-                style={styles.blurContainer}
+        {/* Transactions Section */}
+        <Animated.View 
+          entering={FadeInUp.delay(200).duration(400)}
+          style={styles.transactionsContainer}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Transactions</Text>
+            <Pressable onPress={() => setShowAll(!showAll)}>
+              <Text style={styles.viewAllText}>
+                {showAll ? 'Show Less' : 'View All'}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.transactionsList}>
+            {(showAll ? TRANSACTIONS : TRANSACTIONS.slice(0, 2)).map((transaction) => (
+              <Pressable
+                key={transaction.id}
+                style={styles.transactionItem}
+                onPress={() => handleTransactionPress(transaction)}
               >
-                <View style={styles.balanceContainer}>
-                  <Text style={styles.balanceLabel}>Current Balance</Text>
-                  <Text style={styles.balanceAmount}>{formatCurrency(balance)}</Text>
-                  <Pressable
-                    style={[styles.topUpButton, { backgroundColor: colors.card }]}
-                    onPress={handleTopUp}
-                  >
-                    <Text style={[styles.topUpButtonText, { color: colors.primary }]}>Top Up</Text>
-                    <Feather name="plus" size={16} color={colors.primary} style={{ marginLeft: 6 }} />
-                  </Pressable>
+                <View style={styles.transactionIconContainer}>
+                  <Feather
+                    name={transaction.type === 'credit' ? 'arrow-down-left' : 'arrow-up-right'}
+                    size={16}
+                    color={transaction.type === 'credit' ? Colors.success : Colors.error}
+                  />
                 </View>
-              </BlurView>
-            </Animated.View>
-
-            {/* Search Bar */}
-            <Animated.View
-              style={[styles.searchContainer, { backgroundColor: colors.card }]}
-              entering={FadeInDown.delay(150).springify()}
-            >
-              <View style={styles.searchInputWrapper}>
-                <Feather name="search" size={16} color="#555" style={styles.searchIcon} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search transactions..."
-                  placeholderTextColor="#555"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  returnKeyType="search"
-                  onSubmitEditing={Keyboard.dismiss}
-                />
-                {searchQuery.length > 0 && (
-                  <Pressable 
-                    onPress={() => setSearchQuery('')}
-                    style={styles.clearButton}
-                  >
-                    <Feather name="x" size={16} color="#555" />
-                  </Pressable>
-                )}
-              </View>
-            </Animated.View>
-
-            {/* Wallet Info */}
-            <Animated.View 
-              style={[styles.walletInfoContainer, { backgroundColor: colors.card }]}
-              entering={FadeInDown.delay(200).springify()}
-            >
-              <View style={styles.walletInfoHeader}>
-                <Text style={[styles.walletInfoTitle, { color: colors.text }]}>About Your Wallet</Text>
-              </View>
-              <View style={styles.walletInfoContent}>
-                <View style={styles.infoItem}>
-                  <FontAwesome5 name="wallet" size={18} color={colors.primary} />
-                  <Text style={[styles.infoText, { color: colors.text }]}>
-                    Your Storda Balance
-                  </Text>
+                <View style={styles.transactionDetails}>
+                  <Text style={styles.transactionDescription}>{transaction.description}</Text>
+                  <Text style={styles.transactionDate}>{formatDate(transaction.date)}</Text>
                 </View>
-                <View style={styles.infoItem}>
-                  <Feather name="shield" size={18} color={colors.primary} />
-                  <Text style={[styles.infoText, { color: colors.text }]}>
-                    Secure Transaction Processing
-                  </Text>
-                </View>
-              </View>
-            </Animated.View>
-
-            {/* Transactions */}
-            <Animated.View
-              style={[styles.transactionsContainer, { backgroundColor: colors.card }]}
-              entering={FadeInDown.delay(300).springify()}
-            >
-              <View style={styles.transactionsHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Transactions</Text>
-                <Pressable
-                  style={styles.viewAllButton}
-                  onPress={() => setShowAll(!showAll)}
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    { color: transaction.type === 'credit' ? Colors.success : Colors.error }
+                  ]}
                 >
-                  <Text style={[styles.viewAllText, { color: colors.primary }]}>
-                    {showAll ? 'Show Less' : 'See All'}
-                  </Text>
-                </Pressable>
-              </View>
-              
-              {displayedTransactions.length > 0 ? (
-                <View style={styles.transactionsList}>
-                  {displayedTransactions.map(renderTransactionItem)}
-                </View>
-              ) : (
-                <View style={styles.emptyState}>
-                  <Feather name="inbox" size={40} color="#ccc" />
-                  <Text style={styles.emptyStateText}>No transactions found</Text>
-                </View>
-              )}
-            </Animated.View>
-          </ScrollView>
-        </SafeAreaView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+                  {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.background.main,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: Colors.background.card,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.text.primary,
   },
   scrollView: {
     flex: 1,
   },
-  contentContainer: {
+  content: {
     padding: 16,
     paddingBottom: 32,
   },
-  header: {
+  balanceContainer: {
+    marginBottom: 24,
+  },
+  balanceCard: {
+    padding: 20,
+    borderRadius: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-  },
-  screenTitle: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 28,
-  },
-  balanceCard: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 16,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 4,
   },
-  blurContainer: {
-    overflow: 'hidden',
-    backgroundColor: '#5A71E4',
-  },
-  balanceContainer: {
-    padding: 24,
+  balanceSection: {
+    flex: 1,
   },
   balanceLabel: {
-    fontFamily: 'Inter-Medium',
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   balanceAmount: {
-    fontFamily: 'Inter-Bold',
     fontSize: 32,
-    color: '#FFFFFF',
-    marginBottom: 16,
+    fontWeight: '700',
+    color: Colors.text.light,
   },
   topUpButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-    paddingVertical: 8,
     paddingHorizontal: 16,
-    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    borderRadius: 8,
   },
-  topUpButtonText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 13,
-    color: '#FFFFFF',
+  topUpText: {
+    color: Colors.text.light,
+    fontWeight: '600',
+    marginLeft: 6,
   },
-  searchContainer: {
-    borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  transactionsContainer: {
+    backgroundColor: Colors.background.card,
+    borderRadius: 16,
+    padding: 16,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
-    elevation: 2,
   },
-  searchInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    height: 36,
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: '#222D3A',
-  },
-  clearButton: {
-    padding: 4,
-  },
-  walletInfoContainer: {
-    backgroundColor: 'rgba(90, 113, 228, 0.1)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  walletInfoHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  walletInfoTitle: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-    color: '#5A71E4',
-  },
-  walletInfoContent: {
-    padding: 12,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoText: {
-    marginLeft: 12,
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
-    color: '#222D3A',
-    marginBottom: 0,
-  },
-  transactionsContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-  },
-  transactionsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  viewAllButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text.primary,
   },
   viewAllText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 13,
-    color: '#5A71E4',
+    fontSize: 14,
+    color: Colors.primary,
+    fontWeight: '500',
   },
   transactionsList: {
-    borderRadius: 12,
-    overflow: 'hidden',
+    gap: 16,
   },
   transactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(132, 148, 169, 0.1)',
-  },
-  transactionBorder: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
   },
   transactionIconContainer: {
     width: 36,
     height: 36,
     borderRadius: 18,
+    backgroundColor: Colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  creditIconContainer: {
-    backgroundColor: 'rgba(48, 176, 80, 0.1)',
-  },
-  debitIconContainer: {
-    backgroundColor: 'rgba(228, 90, 90, 0.1)',
-  },
   transactionDetails: {
     flex: 1,
   },
-  transactionTitle: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-    color: '#222D3A',
+  transactionDescription: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.text.primary,
     marginBottom: 2,
   },
   transactionDate: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: '#555',
+    fontSize: 13,
+    color: Colors.text.secondary,
   },
   transactionAmount: {
-    alignItems: 'flex-end',
-  },
-  amountText: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 14,
-  },
-  statusText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: '#555',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
-  },
-  emptyStateText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-    color: '#8494A9',
-    marginTop: 12,
-  },
+    fontSize: 16,
+    fontWeight: '600',
+  }
 });
