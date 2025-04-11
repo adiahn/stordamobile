@@ -142,22 +142,10 @@ export default function HomeScreen() {
   };
 
   const handleTransferDevice = (device: Device) => {
-    const storeDevice: StoreDevice = {
-      name: device.name,
-      imei: device.imei,
-      macAddress: device.macAddress,
-      id: device.id,
-      key: device.key,
-      ownership: device.ownership,
-      storage: device.storage,
-      color: device.color,
-      brand: device.brand,
-      registrationDate: device.registrationDate,
-      status: device.status
-    };
-
-    useDeviceStore.getState().setSelectedDevice(storeDevice);
-    router.push(`/devices/dev_1`);
+    // Skip verification check for transfers
+    useDeviceStore.getState().setSelectedDevice(device);
+    router.push('/devices/dev_1');
+    setShowTransferModal(false);
   };
 
   const displayDevices = showAllDevices ? devices : devices.slice(0, 3);

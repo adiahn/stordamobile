@@ -86,20 +86,6 @@ const DeviceDetailsCard = ({ device }: { device: DeviceType | null }) => {
         <Text style={styles.detailLabel}>Added On</Text>
         <Text style={styles.detailValue}>{formattedDate}</Text>
       </View>
-      <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Verification</Text>
-        <View style={[
-          styles.statusBadge,
-          device?.verificationStatus === 'verified' ? styles.activeBadge : 
-          device?.verificationStatus === 'pending' ? styles.pendingBadge : 
-          styles.unverifiedBadge
-        ]}>
-          <Text style={styles.statusText}>
-            {device?.verificationStatus === 'verified' ? 'Verified' : 
-             device?.verificationStatus === 'pending' ? 'Pending' : 'Unverified'}
-          </Text>
-        </View>
-      </View>
     </LinearGradient>
   );
 };
@@ -191,16 +177,6 @@ export default function DeviceDetailsScreen() {
         return;
       }
 
-      // Check if device is verified - only allow transfer of verified devices
-      if (device.verificationStatus !== 'verified') {
-        showErrorModal(
-          'Verification Required',
-          'To transfer ownership of this device, it must be verified first. Please verify your device through the verification section in the app.',
-          'verification'
-        );
-        return;
-      }
-      
       // Simulate checking if user exists
       setIsCheckingUser(true);
       
@@ -276,18 +252,6 @@ export default function DeviceDetailsScreen() {
   const handleBackPress = useCallback(() => {
     router.back();
   }, []);
-
-  // Handler for verification click
-  const handleVerifyDevice = useCallback(() => {
-    if (device) {
-      // In a real app, this would navigate to the verification screen
-      // For now, we'll just navigate back to devices screen with a param
-      router.push({
-        pathname: '/devices',
-        params: { verifyDeviceId: device.id }
-      });
-    }
-  }, [device]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -374,15 +338,8 @@ export default function DeviceDetailsScreen() {
         title={errorTitle}
         message={errorMessage}
         type="error"
-        primaryButtonText={errorTitle === 'Verification Required' ? 'Verify Device' : 'OK'}
-        secondaryButtonText={errorTitle === 'Verification Required' ? 'Cancel' : undefined}
+        primaryButtonText="OK"
         onPrimaryButtonPress={() => {
-          setErrorModalVisible(false);
-          if (errorTitle === 'Verification Required') {
-            handleVerifyDevice();
-          }
-        }}
-        onSecondaryButtonPress={() => {
           setErrorModalVisible(false);
         }}
       />
@@ -497,12 +454,6 @@ const styles = StyleSheet.create({
   },
   activeBadge: {
     backgroundColor: '#30B05033',
-  },
-  pendingBadge: {
-    backgroundColor: '#FFA50033',
-  },
-  unverifiedBadge: {
-    backgroundColor: '#8494A933',
   },
   transferredBadge: {
     backgroundColor: '#5A71E433',

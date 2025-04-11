@@ -40,6 +40,18 @@ const Modal: React.FC<ModalProps> = memo(({
   onSecondaryButtonPress,
   children
 }) => {
+  // Skip verification required modals
+  if (title === 'Verification Required') {
+    // If this is a verification required modal, call onPrimaryButtonPress if available
+    // otherwise just call onClose to dismiss it
+    if (onPrimaryButtonPress) {
+      setTimeout(onPrimaryButtonPress, 0);
+    } else {
+      setTimeout(onClose, 0);
+    }
+    return null;
+  }
+
   // State to handle visibility with animation timing
   const [internalVisible, setInternalVisible] = useState(visible);
   

@@ -172,6 +172,7 @@ const device: ExtendedDevice = storeDevice || {
   };
 
   const handleTransferDevice = () => {
+    // Transfer device without requiring verification
     initiateAction('transfer');
   };
 

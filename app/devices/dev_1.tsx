@@ -1,4 +1,18 @@
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Switch } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Pressable, 
+  TextInput, 
+  Alert, 
+  Modal, 
+  KeyboardAvoidingView, 
+  Platform, 
+  TouchableWithoutFeedback, 
+  Keyboard,
+  ScrollView,
+  ActivityIndicator 
+} from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useDeviceStore, Device } from '../store/store';
@@ -20,13 +34,19 @@ export default function TransferDeviceScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
-  const [nin, setNin] = useState('');
   const [transferType, setTransferType] = useState<'email' | 'phone'>('email');
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
-  const [requireIdentification, setRequireIdentification] = useState(true);
   const [transferReason, setTransferReason] = useState('');
   const [isTransferAgreementChecked, setIsTransferAgreementChecked] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  
+  // Custom modals state
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showRecipientFoundModal, setShowRecipientFoundModal] = useState(false);
+  const [showTransferCompletedModal, setShowTransferCompletedModal] = useState(false);
+  const [transferId, setTransferId] = useState('');
   
   const device = selectedDevice || {
     name: 'Unknown Device',
@@ -35,27 +55,6 @@ export default function TransferDeviceScreen() {
     id: 'Unknown',
     ownership: true,
   };
-
-  // Check device verification status
-  useEffect(() => {
-    if (device.verificationStatus !== 'verified') {
-      Alert.alert(
-        "Verification Required",
-        "To transfer ownership of a device, it must be verified first. Would you like to verify this device now?",
-        [
-          {
-            text: "Cancel",
-            onPress: () => router.back(),
-            style: "cancel"
-          },
-          {
-            text: "Verify Device",
-            onPress: () => router.push('/(tabs)') // Temporarily route to home until verification screen exists
-          }
-        ]
-      );
-    }
-  }, [device]);
 
   // Watch pin length and auto-verify when 4 digits are entered
   useEffect(() => {
@@ -71,65 +70,85 @@ export default function TransferDeviceScreen() {
       // Validate inputs based on selected transfer type
       if (transferType === 'email') {
         if (!validateEmail(email)) {
-          Alert.alert('Error', 'Please enter a valid email address');
+          setErrorMessage('Please enter a valid email address');
+          setShowErrorModal(true);
           return;
         }
       } else if (transferType === 'phone') {
         if (!validatePhone(phone)) {
-          Alert.alert('Error', 'Please enter a valid phone number');
+          setErrorMessage('Please enter a valid phone number');
+          setShowErrorModal(true);
           return;
         }
       }
       
-      // Validate recipient name
-      if (!fullName.trim()) {
-        Alert.alert('Error', 'Please enter the recipient\'s full name');
-        return;
-      }
-      
-      // Validate NIN if identification is required
-      if (requireIdentification && !validateNIN(nin)) {
-        Alert.alert('Error', 'Please enter a valid NIN (11 digits)');
-        return;
-      }
-      
-      // Validate reason for transfer
+      // Validate transfer reason
       if (!transferReason.trim()) {
-        Alert.alert('Error', 'Please provide a reason for the transfer');
+        setErrorMessage('Please provide a reason for the transfer');
+        setShowErrorModal(true);
         return;
       }
       
       // Check transfer agreement
       if (!isTransferAgreementChecked) {
-        Alert.alert('Error', 'Please agree to the transfer terms');
+        setErrorMessage('Please agree to the transfer terms');
+        setShowErrorModal(true);
         return;
       }
       
       // Check if user has enough balance for transfer fee
       if (WALLET_BALANCE < TRANSFER_FEE) {
-        Alert.alert(
-          'Insufficient Balance',
-          `You need ₦${TRANSFER_FEE} in your wallet to transfer this device. Please top up your wallet.`,
-          [
-            {
-              text: 'Top Up',
-              onPress: () => router.push('/(tabs)/wallet'),
-            },
-            {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-          ]
-        );
+        setErrorMessage(`You need ₦${TRANSFER_FEE} in your wallet to transfer this device. Please top up your wallet.`);
+        setShowErrorModal(true);
         return;
       }
 
-      // Show PIN verification modal
-      setShowPinModal(true);
+      // Verify recipient details
+      verifyRecipient();
     } catch (error) {
       console.error("Error initiating transfer:", error);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      setErrorMessage('An unexpected error occurred. Please try again.');
+      setShowErrorModal(true);
     }
+  };
+
+  const verifyRecipient = () => {
+    // Simulate recipient verification
+    setIsVerifying(true);
+    
+    // Mock API call to verify recipient details
+    setTimeout(() => {
+      setIsVerifying(false);
+      
+      const recipient = transferType === 'email' ? email : phone;
+      
+      // Mock verification result - in a real app this would come from an API
+      if (transferType === 'email' && email.includes('@')) {
+        // For demo purposes, we'll auto-populate the name for certain domains
+        if (email.endsWith('@gmail.com')) {
+          setFullName('Grace Ayomide');
+        } else if (email.endsWith('@yahoo.com')) {
+          setFullName('Taiwo Johnson');
+        } else if (email.endsWith('@outlook.com')) {
+          setFullName('Nkem Okonkwo');
+        } else {
+          setFullName('User ' + Math.floor(1000 + Math.random() * 9000));
+        }
+        
+        // Show verification confirmation using custom modal
+        setShowRecipientFoundModal(true);
+      } else if (transferType === 'phone' && phone.length >= 10) {
+        // For demo purposes with phone numbers
+        setFullName('User ' + phone.substring(phone.length - 4));
+        
+        // Show verification confirmation using custom modal
+        setShowRecipientFoundModal(true);
+      } else {
+        // Show error using custom modal
+        setErrorMessage(`We couldn't find a user with the provided ${transferType}. Please check and try again.`);
+        setShowErrorModal(true);
+      }
+    }, 1500); // Simulate 1.5 seconds delay for API call
   };
 
   // Validation functions
@@ -142,16 +161,12 @@ export default function TransferDeviceScreen() {
     const phoneRegex = /^\+?[0-9]{10,15}$/;
     return phoneRegex.test(phone);
   };
-  
-  const validateNIN = (nin: string): boolean => {
-    const ninRegex = /^[0-9]{11}$/;
-    return ninRegex.test(nin);
-  };
 
   const handlePinVerification = () => {
     try {
       if (pin !== USER_PIN) {
-        Alert.alert('Error', 'Incorrect PIN. Please try again.');
+        setErrorMessage('Incorrect PIN. Please try again.');
+        setShowErrorModal(true);
         setPin('');
         return;
       }
@@ -164,7 +179,8 @@ export default function TransferDeviceScreen() {
       completeTransfer();
     } catch (error) {
       console.error("Error verifying PIN:", error);
-      Alert.alert('Error', 'Failed to verify PIN. Please try again.');
+      setErrorMessage('Failed to verify PIN. Please try again.');
+      setShowErrorModal(true);
       setPin('');
     }
   };
@@ -172,7 +188,8 @@ export default function TransferDeviceScreen() {
   const completeTransfer = () => {
     try {
       if (!device.key) {
-        Alert.alert('Error', 'Device key is missing. Cannot complete transfer.');
+        setErrorMessage('Device key is missing. Cannot complete transfer.');
+        setShowErrorModal(true);
         return;
       }
       
@@ -184,10 +201,8 @@ export default function TransferDeviceScreen() {
         transferDate: new Date().toISOString(),
         toEmail: transferType === 'email' ? email : undefined,
         toPhone: transferType === 'phone' ? phone : undefined,
-        wasVerified: requireIdentification,
-        verificationMethod: requireIdentification ? 'NIN' : undefined,
+        wasVerified: true,
         recipientName: fullName,
-        recipientNIN: requireIdentification ? nin : undefined,
         transferReason: transferReason,
       };
       
@@ -198,36 +213,46 @@ export default function TransferDeviceScreen() {
         recipient
       );
       
+      // Create updated device with transfer history
+      // We need to cast it to include the transferHistory field
+      type DeviceWithHistory = Device & {
+        transferHistory?: Array<{
+          transferDate: string;
+          toEmail?: string;
+          toPhone?: string;
+          wasVerified: boolean;
+          recipientName: string;
+          transferReason: string;
+        }>;
+        transferredTo?: string;
+        currentOwner?: string;
+      };
+      
       // Update device with transfer history
-      const updatedDevice = {
+      const updatedDevice: DeviceWithHistory = {
         ...device,
         status: 'transferred' as const,
         transferredTo: recipient,
         currentOwner: fullName,
-        ownerNIN: requireIdentification ? nin : undefined,
         transferHistory: [
-          ...(device.transferHistory || []),
+          ...((device as DeviceWithHistory).transferHistory || []),
           transferRecord
         ]
       };
       
       // Update selected device in store
-      useDeviceStore.getState().setSelectedDevice(updatedDevice);
+      useDeviceStore.getState().setSelectedDevice(updatedDevice as Device);
       
-      // Show confirmation message with transfer details
-      Alert.alert(
-        'Device Transfer Initiated',
-        `${device.name} transfer has been initiated to ${fullName}.\n\nThe recipient will receive a confirmation ${transferType === 'email' ? 'email' : 'SMS'} with instructions to accept the transfer.\n\nTransfer ID: TRF-${Math.floor(100000 + Math.random() * 900000)}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => router.push('/(tabs)'),
-          },
-        ]
-      );
+      // Generate a transfer ID
+      const generatedTransferId = `TRF-${Math.floor(100000 + Math.random() * 900000)}`;
+      setTransferId(generatedTransferId);
+      
+      // Show transfer completion modal
+      setShowTransferCompletedModal(true);
     } catch (error) {
       console.error("Error completing transfer:", error);
-      Alert.alert('Error', 'Failed to complete the transfer. Please try again.');
+      setErrorMessage('Failed to complete the transfer. Please try again.');
+      setShowErrorModal(true);
     }
   };
 
@@ -236,18 +261,22 @@ export default function TransferDeviceScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
       style={styles.keyboardAvoidingContainer}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Pressable
-              style={styles.backButton}
-              onPress={() => router.back()}
-            >
-              <Feather name="arrow-left" size={20} color="#222D3A" />
-            </Pressable>
-            <Text style={styles.title}>Transfer Device</Text>
-          </View>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Feather name="arrow-left" size={20} color="#222D3A" />
+          </Pressable>
+          <Text style={styles.title}>Transfer Device</Text>
+        </View>
 
+        <ScrollView 
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}
+        >
           <Animated.View 
             style={styles.deviceCard}
             entering={FadeInUp.duration(500).delay(100)}
@@ -291,8 +320,9 @@ export default function TransferDeviceScreen() {
             style={styles.transferOptions}
             entering={FadeInUp.duration(500).delay(200)}
           >
-            <Text style={styles.sectionTitle}>Transfer Method</Text>
+            <Text style={styles.sectionTitle}>Transfer Details</Text>
             
+            {/* Transfer Method Toggle */}
             <View style={styles.methodToggle}>
               <Pressable 
                 style={[
@@ -340,56 +370,34 @@ export default function TransferDeviceScreen() {
                 </Text>
               </Pressable>
             </View>
-          </Animated.View>
 
-          <Animated.View
-            style={styles.inputSection}
-            entering={FadeInUp.duration(500).delay(300)}
-          >
-            {/* Recipient Full Name Input - New */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Recipient's Full Name</Text>
-              <View style={styles.inputWrapper}>
-                <Feather name="user" size={16} color="#8494A9" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter recipient's full name"
-                  value={fullName}
-                  onChangeText={setFullName}
-                  autoCapitalize="words"
-                  placeholderTextColor="#8494A9"
-                  returnKeyType="next"
-                />
-              </View>
-            </View>
-
-            {/* Identification toggle - New */}
-            <View style={styles.switchGroup}>
-              <View style={styles.switchLabelContainer}>
-                <Text style={styles.inputLabel}>Require Identification</Text>
-                <Text style={styles.switchDescription}>Recipient must provide NIN for verification</Text>
-              </View>
-              <Switch
-                value={requireIdentification}
-                onValueChange={setRequireIdentification}
-                trackColor={{ false: "#E5E9F0", true: "#5A71E440" }}
-                thumbColor={requireIdentification ? "#5A71E4" : "#FFFFFF"}
-              />
-            </View>
-
-            {/* NIN Input - New, only shown if requireIdentification is true */}
-            {requireIdentification && (
+            {/* Email/Phone Input */}
+            {transferType === 'email' ? (
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Recipient's NIN</Text>
                 <View style={styles.inputWrapper}>
-                  <Feather name="credit-card" size={16} color="#8494A9" style={styles.inputIcon} />
+                  <Feather name="mail" size={16} color="#8494A9" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter 11-digit NIN"
-                    value={nin}
-                    onChangeText={(text) => setNin(text.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    maxLength={11}
+                    placeholder="Recipient's email address"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholderTextColor="#8494A9"
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
+            ) : (
+              <View style={styles.inputGroup}>
+                <View style={styles.inputWrapper}>
+                  <Feather name="phone" size={16} color="#8494A9" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Recipient's phone number"
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
                     placeholderTextColor="#8494A9"
                     returnKeyType="next"
                   />
@@ -397,23 +405,23 @@ export default function TransferDeviceScreen() {
               </View>
             )}
 
-            {/* Transfer Reason - New */}
+            {/* Transfer Reason */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Reason for Transfer</Text>
               <View style={styles.inputWrapper}>
                 <Feather name="info" size={16} color="#8494A9" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="E.g., Sold, Gift, Replacement"
+                  placeholder="Reason for transfer"
                   value={transferReason}
                   onChangeText={setTransferReason}
                   placeholderTextColor="#8494A9"
-                  returnKeyType="next"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
                 />
               </View>
             </View>
 
-            {/* Transfer Agreement Checkbox - New */}
+            {/* Transfer Agreement Checkbox */}
             <Pressable 
               style={styles.checkboxContainer}
               onPress={() => setIsTransferAgreementChecked(!isTransferAgreementChecked)}
@@ -422,121 +430,131 @@ export default function TransferDeviceScreen() {
                 {isTransferAgreementChecked && <Feather name="check" size={12} color="#FFFFFF" />}
               </View>
               <Text style={styles.checkboxLabel}>
-                I confirm that I am the rightful owner of this device and authorize its transfer
+                I confirm that I am the owner of this device
               </Text>
             </Pressable>
 
-            {transferType === 'email' ? (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Recipient's Email</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="mail" size={16} color="#8494A9" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter email address"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholderTextColor="#8494A9"
-                    returnKeyType="done"
-                    onSubmitEditing={Keyboard.dismiss}
-                    blurOnSubmit={true}
-                  />
-                </View>
+            <Animated.View
+              style={styles.infoSection}
+              entering={FadeInUp.duration(500).delay(400)}
+            >
+              <View style={styles.infoCard}>
+                <Feather name="info" size={16} color="#5A71E4" style={styles.infoIcon} />
+                <Text style={styles.infoText}>
+                  We'll verify the recipient's details before completing the transfer. Once accepted, you'll no longer have access to this device.
+                </Text>
               </View>
-            ) : (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Recipient's Phone Number</Text>
-                <View style={styles.inputWrapper}>
-                  <Feather name="phone" size={16} color="#8494A9" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter phone number"
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    placeholderTextColor="#8494A9"
-                    returnKeyType="done"
-                    onSubmitEditing={Keyboard.dismiss}
-                    blurOnSubmit={true}
-                  />
-                </View>
-              </View>
-            )}
+            </Animated.View>
           </Animated.View>
+        </ScrollView>
 
-          <Animated.View
-            style={styles.infoSection}
-            entering={FadeInUp.duration(500).delay(400)}
-          >
-            <View style={styles.infoCard}>
-              <Feather name="info" size={16} color="#5A71E4" style={styles.infoIcon} />
-              <Text style={styles.infoText}>
-                The recipient will receive a notification with instructions to accept the transfer. 
-                Once accepted, you will no longer have access to this device.
-              </Text>
+        <AnimatedPressable
+          style={styles.transferButton}
+          entering={FadeInUp.duration(500).delay(500)}
+          onPress={initiateTransfer}
+          disabled={isVerifying}
+        >
+          {isVerifying ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Text style={styles.transferButtonText}>Continue</Text>
+              <Feather name="arrow-right" size={18} color="#FFF" />
+            </>
+          )}
+        </AnimatedPressable>
+
+        {/* Error Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showErrorModal}
+          onRequestClose={() => setShowErrorModal(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowErrorModal(false)}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalIconContainer}>
+                  <View style={styles.errorIconCircle}>
+                    <Feather name="x" size={24} color="#FFFFFF" />
+                  </View>
+                </View>
+                
+                <Text style={styles.modalTitle}>Error</Text>
+                <Text style={styles.modalMessage}>{errorMessage}</Text>
+                
+                <Pressable 
+                  style={styles.modalButton}
+                  onPress={() => setShowErrorModal(false)}
+                >
+                  <Text style={styles.modalButtonText}>OK</Text>
+                </Pressable>
+              </View>
             </View>
-          </Animated.View>
+          </TouchableWithoutFeedback>
+        </Modal>
 
-          <AnimatedPressable
-            style={styles.transferButton}
-            entering={FadeInUp.duration(500).delay(500)}
-            onPress={initiateTransfer}
-          >
-            <Text style={styles.transferButtonText}>Continue</Text>
-            <Feather name="arrow-right" size={18} color="#FFF" />
-          </AnimatedPressable>
-
-          {/* PIN Verification Modal */}
-          <Modal
-            animationType="fade"
-            transparent={true}
-            visible={showPinModal}
-            onRequestClose={() => {
-              setShowPinModal(false);
-              setPin('');
-            }}
-          >
-            <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-              <View style={styles.modalOverlay}>
-                <View style={styles.pinModalContent}>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Enter PIN</Text>
-                    <Pressable 
-                      onPress={() => {
-                        setShowPinModal(false);
-                        setPin('');
-                      }}
-                    >
-                      <Feather name="x" size={20} color="#222D3A" />
-                    </Pressable>
+        {/* PIN Verification Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showPinModal}
+          onRequestClose={() => {
+            setShowPinModal(false);
+            setPin('');
+          }}
+        >
+          <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.pinModalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Enter PIN</Text>
+                  <Pressable 
+                    onPress={() => {
+                      setShowPinModal(false);
+                      setPin('');
+                    }}
+                  >
+                    <Feather name="x" size={20} color="#222D3A" />
+                  </Pressable>
+                </View>
+                
+                <View style={styles.pinModalIconContainer}>
+                  <LinearGradient
+                    colors={['rgba(90, 113, 228, 0.1)', 'rgba(140, 59, 255, 0.1)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.pinIconCircle}
+                  >
+                    <Feather name="lock" size={24} color="#5A71E4" />
+                  </LinearGradient>
+                </View>
+                
+                <Text style={styles.pinDescription}>
+                  Enter your PIN to confirm transferring {device.name}
+                </Text>
+                
+                <View style={styles.transferSummary}>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Recipient:</Text>
+                    <Text style={styles.summaryValue}>{fullName}</Text>
                   </View>
-                  
-                  <Text style={styles.pinDescription}>
-                    Please enter your PIN to confirm the transfer of {device.name} to {transferType === 'email' ? email : phone}
-                  </Text>
-                  
-                  <View style={styles.transferSummary}>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Device:</Text>
-                      <Text style={styles.summaryValue}>{device.name}</Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Recipient:</Text>
-                      <Text style={styles.summaryValue}>{transferType === 'email' ? email : phone}</Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Fee:</Text>
-                      <Text style={styles.summaryValue}>₦{TRANSFER_FEE}</Text>
-                    </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Via:</Text>
+                    <Text style={styles.summaryValue}>{transferType === 'email' ? email : phone}</Text>
                   </View>
-                  
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Fee:</Text>
+                    <Text style={styles.summaryValue}>₦{TRANSFER_FEE}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.pinInputContainer}>
+                  <Text style={styles.pinInputLabel}>Enter 4-digit PIN</Text>
                   <TextInput
                     style={styles.pinInput}
                     value={pin}
                     onChangeText={setPin}
-                    placeholder="Enter 4-digit PIN"
                     keyboardType="number-pad"
                     maxLength={4}
                     secureTextEntry
@@ -544,22 +562,131 @@ export default function TransferDeviceScreen() {
                     autoFocus={true}
                     returnKeyType="done"
                   />
+                </View>
+                
+                <Pressable 
+                  style={[styles.pinSubmitButton, pin.length === 4 && styles.pinSubmitButtonActive]}
+                  onPress={handlePinVerification}
+                  disabled={pin.length !== 4}
+                >
+                  <Text style={[styles.pinSubmitText, pin.length === 4 && styles.pinSubmitTextActive]}>
+                    Complete Transfer
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+
+        {/* Recipient Found Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showRecipientFoundModal}
+          onRequestClose={() => setShowRecipientFoundModal(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowRecipientFoundModal(false)}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalIconContainer}>
+                  <View style={styles.successIconCircle}>
+                    <Feather name="user-check" size={24} color="#FFFFFF" />
+                  </View>
+                </View>
+                
+                <Text style={styles.modalTitle}>Recipient Found</Text>
+                <Text style={styles.modalMessage}>
+                  We've found a user with the {transferType}: {transferType === 'email' ? email : phone}
+                </Text>
+                
+                <View style={styles.recipientDetails}>
+                  <View style={styles.recipientDetailRow}>
+                    <Text style={styles.recipientDetailLabel}>Name:</Text>
+                    <Text style={styles.recipientDetailValue}>{fullName}</Text>
+                  </View>
+                </View>
+                
+                <Text style={styles.confirmationText}>
+                  Do you want to proceed with the transfer?
+                </Text>
+                
+                <View style={styles.modalButtonRow}>
+                  <Pressable 
+                    style={[styles.modalButton, styles.modalButtonOutline]}
+                    onPress={() => setShowRecipientFoundModal(false)}
+                  >
+                    <Text style={styles.modalButtonTextOutline}>No</Text>
+                  </Pressable>
                   
                   <Pressable 
-                    style={[styles.pinSubmitButton, pin.length === 4 && styles.pinSubmitButtonActive]}
-                    onPress={handlePinVerification}
-                    disabled={pin.length !== 4}
+                    style={styles.modalButton}
+                    onPress={() => {
+                      setShowRecipientFoundModal(false);
+                      setShowPinModal(true);
+                    }}
                   >
-                    <Text style={[styles.pinSubmitText, pin.length === 4 && styles.pinSubmitTextActive]}>
-                      Complete Transfer
-                    </Text>
+                    <Text style={styles.modalButtonText}>Yes, Continue</Text>
                   </Pressable>
                 </View>
               </View>
-            </TouchableWithoutFeedback>
-          </Modal>
-        </View>
-      </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+
+        {/* Transfer Completed Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showTransferCompletedModal}
+          onRequestClose={() => {
+            setShowTransferCompletedModal(false);
+            router.push('/(tabs)');
+          }}
+        >
+          <TouchableWithoutFeedback>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalIconContainer}>
+                  <LinearGradient
+                    colors={['#5A71E4', '#8C3BFF']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.successGradientCircle}
+                  >
+                    <Feather name="check" size={24} color="#FFFFFF" />
+                  </LinearGradient>
+                </View>
+                
+                <Text style={styles.modalTitle}>Device Transfer Initiated</Text>
+                <Text style={styles.modalMessage}>
+                  {device.name} transfer has been initiated to {fullName}.
+                </Text>
+                
+                <View style={styles.transferDetails}>
+                  <Text style={styles.transferDetailText}>
+                    The recipient will receive a confirmation {transferType === 'email' ? 'email' : 'SMS'} with instructions to accept the transfer.
+                  </Text>
+                  
+                  <View style={styles.transferIdContainer}>
+                    <Text style={styles.transferIdLabel}>Transfer ID:</Text>
+                    <Text style={styles.transferIdValue}>{transferId}</Text>
+                  </View>
+                </View>
+                
+                <Pressable 
+                  style={styles.modalButton}
+                  onPress={() => {
+                    setShowTransferCompletedModal(false);
+                    router.push('/(tabs)');
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>OK</Text>
+                </Pressable>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -571,13 +698,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
     padding: 16,
-    paddingTop: 60,
+    paddingBottom: 80, // Extra space for the button
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    padding: 16,
+    paddingTop: 60,
   },
   backButton: {
     width: 36,
@@ -594,20 +727,20 @@ const styles = StyleSheet.create({
     color: '#222D3A',
   },
   deviceCard: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   gradientCard: {
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
   },
   deviceInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   deviceIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -620,7 +753,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
     color: '#222D3A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   deviceId: {
     fontFamily: 'Inter-Regular',
@@ -634,17 +767,16 @@ const styles = StyleSheet.create({
     color: '#8494A9',
   },
   feeInfoSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   feeCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
   },
   feeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   feeLabel: {
     fontFamily: 'Inter-Medium',
@@ -662,7 +794,7 @@ const styles = StyleSheet.create({
     color: '#30B050',
   },
   transferOptions: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
@@ -675,20 +807,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 4,
+    marginBottom: 12,
   },
   methodOption: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 12,
   },
   methodSelected: {
     backgroundColor: 'rgba(90, 113, 228, 0.05)',
   },
   methodIcon: {
-    marginRight: 8,
+    marginRight: 6,
   },
   methodText: {
     fontFamily: 'Inter-Medium',
@@ -698,28 +831,19 @@ const styles = StyleSheet.create({
   methodTextSelected: {
     color: '#5A71E4',
   },
-  inputSection: {
-    marginBottom: 20,
-  },
   inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-    color: '#222D3A',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: 8,
   },
   input: {
     flex: 1,
@@ -728,34 +852,71 @@ const styles = StyleSheet.create({
     color: '#222D3A',
   },
   infoSection: {
-    marginBottom: 20,
+    marginVertical: 12,
   },
   infoCard: {
     backgroundColor: 'rgba(90, 113, 228, 0.05)',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   infoIcon: {
-    marginRight: 12,
+    marginRight: 8,
     marginTop: 2,
   },
   infoText: {
     flex: 1,
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontSize: 13,
     color: '#5A71E4',
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#8494A9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  checkboxChecked: {
+    backgroundColor: '#5A71E4',
+    borderColor: '#5A71E4',
+  },
+  checkboxLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#222D3A',
+    flex: 1,
   },
   transferButton: {
     backgroundColor: '#5A71E4',
-    borderRadius: 16,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
     gap: 8,
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 36 : 24,
+    left: 16,
+    right: 16,
+    shadowColor: '#5A71E4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   transferButtonText: {
     fontFamily: 'Inter-SemiBold',
@@ -765,25 +926,167 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  pinModalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    paddingBottom: 24,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '85%',
+    maxWidth: 400,
+    alignItems: 'center',
   },
   modalTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
+    fontSize: 20,
     color: '#222D3A',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#8494A9',
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButton: {
+    backgroundColor: '#5A71E4',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 120,
+  },
+  modalButtonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  modalButtonOutline: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#5A71E4',
+  },
+  modalButtonTextOutline: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: '#5A71E4',
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 12,
+  },
+  modalIconContainer: {
+    marginBottom: 16,
+  },
+  errorIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#E45A5A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#30B050',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successGradientCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recipientDetails: {
+    backgroundColor: 'rgba(90, 113, 228, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    marginBottom: 16,
+  },
+  recipientDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  recipientDetailLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#8494A9',
+  },
+  recipientDetailValue: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#222D3A',
+  },
+  confirmationText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#222D3A',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  transferDetails: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  transferDetailText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#8494A9',
+    marginBottom: 16,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  transferIdContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(90, 113, 228, 0.05)',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  transferIdLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#8494A9',
+    marginRight: 8,
+  },
+  transferIdValue: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#5A71E4',
+  },
+  pinModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+  },
+  pinModalIconContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pinIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pinDescription: {
     fontFamily: 'Inter-Regular',
@@ -792,26 +1095,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  transferSummary: {
-    backgroundColor: 'rgba(90, 113, 228, 0.05)',
-    borderRadius: 12,
-    padding: 12,
+  pinInputContainer: {
+    width: '100%',
     marginBottom: 16,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  summaryLabel: {
+  pinInputLabel: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
     color: '#8494A9',
-  },
-  summaryValue: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
-    color: '#222D3A',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   pinInput: {
     backgroundColor: '#F0F0F0',
@@ -819,7 +1112,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 18,
-    marginBottom: 16,
     textAlign: 'center',
     letterSpacing: 6,
     fontFamily: 'Inter-Bold',
@@ -841,45 +1133,40 @@ const styles = StyleSheet.create({
   pinSubmitTextActive: {
     color: '#FFFFFF',
   },
-  switchGroup: {
+  transferSummary: {
+    backgroundColor: 'rgba(90, 113, 228, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  summaryRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 4,
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
-  switchLabelContainer: {
-    flex: 1,
-    marginRight: 8,
-  },
-  switchDescription: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: '#8494A9',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 4,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#8494A9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  checkboxChecked: {
-    backgroundColor: '#5A71E4',
-  },
-  checkboxLabel: {
+  summaryLabel: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
     color: '#8494A9',
+  },
+  summaryValue: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#222D3A',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  pinModalIconContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
 }); 
