@@ -1,14 +1,14 @@
 /**
  * Formats a number as currency with currency symbol
  * @param amount The amount to format
- * @param locale The locale to use for formatting (default: 'en-US')
- * @param currency The currency code (default: 'USD')
+ * @param locale The locale to use for formatting (default: 'en-NG')
+ * @param currency The currency code (default: 'NGN')
  * @returns Formatted currency string
  */
 export function formatCurrency(
   amount: number,
-  locale: string = 'en-US',
-  currency: string = 'USD'
+  locale: string = 'en-NG',
+  currency: string = 'NGN'
 ): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',

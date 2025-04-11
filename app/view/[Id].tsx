@@ -1,5 +1,5 @@
 import { useLocalSearchParams, router } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
 import { useDeviceStore } from '../store/store';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,14 +8,46 @@ import { useState, useEffect } from 'react';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// PIN for authentication
-const USER_PIN = "1234"; // This would be stored securely in a real app
+const USER_PIN = "1234"; 
+
+// Update the device interface to include new properties
+interface ExtendedDevice {
+  name: string;
+  imei: string;
+  macAddress: string;
+  id: string;
+  ownership: boolean;
+  storage?: string;
+  color?: string;
+  brand?: string;
+  registrationDate: string;
+  status: 'active' | 'lost' | 'stolen' | 'transferred';
+  key: number;
+  registeredBy?: string;
+  currentOwner?: string;
+  ownerNIN?: string;
+  transferredTo?: string;
+}
 
 export default function DeviceDetailsScreen() {
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{
+    name?: string;
+    imei?: string;
+    macAddress?: string;
+    Id?: string;
+    ownership?: string;
+    storage?: string;
+    color?: string;
+    brand?: string;
+    registrationDate?: string;
+    registeredBy?: string;
+    currentOwner?: string;
+    ownerNIN?: string;
+  }>();
+  
   const storeDevices = useDeviceStore((state) => state.devices) || [];
   const [isExpanded, setIsExpanded] = useState(false);
-  const storeDevice = useDeviceStore((state) => state.selectedDevice);
+  const storeDevice = useDeviceStore((state) => state.selectedDevice) as ExtendedDevice | undefined;
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
   const [selectedAction, setSelectedAction] = useState<{
@@ -23,8 +55,7 @@ export default function DeviceDetailsScreen() {
     reportType?: 'lost' | 'stolen';
   } | null>(null);
 
-  // Use the device from store, or fallback to params
-  const device = storeDevice || {
+const device: ExtendedDevice = storeDevice || {
     name: String(params.name || 'Unknown Device'),
     imei: String(params.imei || 'N/A'),
     macAddress: String(params.macAddress || 'N/A'),
@@ -35,10 +66,12 @@ export default function DeviceDetailsScreen() {
     brand: String(params.brand || ''),
     registrationDate: String(params.registrationDate || new Date().toISOString()),
     status: 'active',
-    key: Date.now() // Add a key for the fallback device
-  };
+    key: Date.now(),
+    registeredBy: String(params.registeredBy || ''),
+    currentOwner: String(params.currentOwner || ''),
+    ownerNIN: String(params.ownerNIN || '12345678912')
+};
 
-  // Automatically dismiss keyboard when PIN is 4 digits
   useEffect(() => {
     if (pin.length === 4) {
       Keyboard.dismiss();
@@ -50,7 +83,7 @@ export default function DeviceDetailsScreen() {
       setShowPinModal(false);
       setPin('');
 
-      if (!selectedAction) return;
+    if (!selectedAction) return;
 
       if (selectedAction.type === 'transfer') {
         // Navigate to transfer screen after PIN verification
@@ -148,10 +181,7 @@ export default function DeviceDetailsScreen() {
 
   const updateDeviceStatus = (status: 'active' | 'lost' | 'stolen' | 'transferred', transferredTo?: string) => {
     if (device.key) {
-      // Use the new updateDeviceStatus function from the store
-      useDeviceStore.getState().updateDeviceStatus(device.key, status, transferredTo);
-      
-      // Update selected device in local state for UI updates
+      useDeviceStore.getState().updateDeviceStatus(device.key, status, transferredTo);      
       useDeviceStore.getState().setSelectedDevice({
         ...device, 
         status,
@@ -182,6 +212,12 @@ export default function DeviceDetailsScreen() {
     if (device.status === 'transferred') return 'Transferred';
     return device.ownership ? 'Owned' : 'Unowned';
   };
+  
+  // Mask NIN number to show only last 4 digits
+  const getMaskedNIN = (nin: string = '') => {
+    if (!nin || nin.length < 4) return 'XXXX-XXXX-XXXX';
+    return `XXXX-XXXX-${nin.slice(-4)}`;
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -206,7 +242,7 @@ export default function DeviceDetailsScreen() {
         <Animated.View 
           style={styles.deviceCard}
           entering={FadeInUp.duration(500).delay(100)}
-        >
+          >
           <LinearGradient
             colors={['#5A71E4', '#8C3BFF']}
             start={{ x: 0, y: 0 }}
@@ -290,6 +326,18 @@ export default function DeviceDetailsScreen() {
                   </>
                 )}
 
+                <View style={styles.divider} />
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Registered By</Text>
+                  <Text style={styles.detailValue}>{device.registeredBy || 'Unknown'}</Text>
+                </View>
+
+                <View style={styles.divider} />
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Owner NIN</Text>
+                  <Text style={styles.detailValue}>{getMaskedNIN(device.ownerNIN)}</Text>
+                </View>
+
                 {device.registrationDate && (
                   <>
                     <View style={styles.divider} />
@@ -301,7 +349,17 @@ export default function DeviceDetailsScreen() {
                           month: 'long',
                           day: 'numeric'
                         })}
-                      </Text>
+        </Text>
+      </View>
+                  </>
+                )}
+
+                {device.status === 'transferred' && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Current Owner</Text>
+                      <Text style={styles.detailValue}>{device.currentOwner || 'Unknown'}</Text>
                     </View>
                   </>
                 )}
@@ -361,14 +419,11 @@ export default function DeviceDetailsScreen() {
             setSelectedAction(null);
           }}
         >
-          <KeyboardAvoidingView 
-            style={{flex: 1}} 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          >
+          <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
             <View style={styles.modalOverlay}>
               <View style={styles.pinModalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Enter PIN</Text>
+                  <Text style={styles.modalTitle}>Security Verification</Text>
                   <Pressable 
                     onPress={() => {
                       setShowPinModal(false);
@@ -376,7 +431,7 @@ export default function DeviceDetailsScreen() {
                       setSelectedAction(null);
                     }}
                   >
-                    <Feather name="x" size={20} color="#222D3A" />
+                    <Feather name="x" size={22} color="#222D3A" />
                   </Pressable>
                 </View>
                 
@@ -396,7 +451,7 @@ export default function DeviceDetailsScreen() {
                     const cleanedText = text.replace(/[^0-9]/g, '').slice(0, 4);
                     setPin(cleanedText);
                   }}
-                  placeholder="Enter 4-digit PIN"
+                  placeholder="••••"
                   keyboardType="number-pad"
                   maxLength={4}
                   secureTextEntry
@@ -414,9 +469,9 @@ export default function DeviceDetailsScreen() {
                 </Pressable>
               </View>
             </View>
-          </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
         </Modal>
-      </ScrollView>
+    </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -561,43 +616,54 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   pinModalContent: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    paddingBottom: 24,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   modalTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
+    fontSize: 20,
     color: '#222D3A',
   },
   pinDescription: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: '#8494A9',
-    marginBottom: 16,
+    marginBottom: 24,
     textAlign: 'center',
+    lineHeight: 20,
   },
   pinInput: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F5F7FA',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 18,
-    marginBottom: 16,
+    paddingVertical: 14,
+    fontSize: 24,
+    marginBottom: 24,
     textAlign: 'center',
-    letterSpacing: 6,
+    letterSpacing: 12,
     fontFamily: 'Inter-Bold',
+    height: 60,
+    borderWidth: 1,
+    borderColor: '#E5E9F0',
   },
   pinSubmitButton: {
     backgroundColor: '#F0F0F0',

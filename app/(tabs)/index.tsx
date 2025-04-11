@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useDeviceStore, Device as StoreDevice } from '../store/store';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Modal, TextInput, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp, FadeInRight } from 'react-native-reanimated';
@@ -47,7 +47,7 @@ export default function HomeScreen() {
     type: 'transfer' | 'remove' | 'report';
     device?: Device;
   } | null>(null);
-  
+
   const [devices, setDevices] = useState<Device[]>([
     {
       name: 'iPhone 13 Pro',
@@ -89,15 +89,15 @@ export default function HomeScreen() {
         status: d.status,
         transferredTo: d.transferredTo
       }));
-      
+
       // Combine with existing devices
       const combinedDevices = [...convertedStoreDevices, ...devices];
-      
+
       // Filter out duplicates based on key
       const uniqueDevices = combinedDevices.filter((device, index, self) =>
         index === self.findIndex((d) => d.key === device.key)
       );
-      
+
       setDevices(uniqueDevices);
     }
   }, [storeDevices]);
@@ -114,14 +114,14 @@ export default function HomeScreen() {
       } else if (selectedDeviceAction.type === 'remove' && selectedDeviceAction.device) {
         const updatedDevices = devices.filter(d => d.key !== selectedDeviceAction.device?.key);
         setDevices(updatedDevices);
-        
+
         if (useDeviceStore.getState().removeDevice) {
           useDeviceStore.getState().removeDevice(selectedDeviceAction.device.key);
         }
-        
+
         Alert.alert("Device Removed", "The device has been removed successfully.");
       } else if (selectedDeviceAction.type === 'report' && selectedDeviceAction.device) {
-          router.push({
+        router.push({
           pathname: '/view/[Id]',
           params: { Id: selectedDeviceAction.device.id }
         });
@@ -133,7 +133,7 @@ export default function HomeScreen() {
 
   const initiateAction = (type: 'transfer' | 'remove' | 'report', device?: Device) => {
     setSelectedDeviceAction({ type, device });
-    
+
     if (type === 'transfer' && device) {
       handleTransferDevice(device);
     } else {
@@ -155,7 +155,7 @@ export default function HomeScreen() {
       registrationDate: device.registrationDate,
       status: device.status
     };
-    
+
     useDeviceStore.getState().setSelectedDevice(storeDevice);
     router.push(`/devices/dev_1`);
   };
@@ -169,7 +169,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -215,7 +215,7 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.actionButtonText}>Add Device</Text>
             </Pressable>
-            
+
             <Pressable
               onPress={() => router.push('/devices')}
               style={[styles.actionButton]}
@@ -232,7 +232,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Your Devices</Text>
             {hasMoreDevices && (
-              <Pressable 
+              <Pressable
                 style={styles.seeAllButton}
                 onPress={() => setShowAllDevices(!showAllDevices)}
               >
@@ -242,7 +242,7 @@ export default function HomeScreen() {
               </Pressable>
             )}
           </View>
-          
+
           {displayDevices.map((device) => (
             <Pressable
               key={device.key}
@@ -262,7 +262,7 @@ export default function HomeScreen() {
                   registrationDate: device.registrationDate,
                   status: device.status
                 };
-                
+
                 useDeviceStore.getState().setSelectedDevice(storeDevice);
                 router.push({
                   pathname: '/view/[Id]',
@@ -288,28 +288,28 @@ export default function HomeScreen() {
                   <View
                     style={[
                       styles.deviceBadge,
-                      device.status === 'lost' || device.status === 'stolen' 
-                        ? styles.reportedBadge 
+                      device.status === 'lost' || device.status === 'stolen'
+                        ? styles.reportedBadge
                         : device.status === 'transferred'
-                        ? styles.transferredBadge
-                        : device.ownership ? styles.ownedBadge : styles.unownedBadge,
+                          ? styles.transferredBadge
+                          : device.ownership ? styles.ownedBadge : styles.unownedBadge,
                     ]}
                   >
                     <Text style={[
                       styles.deviceBadgeText,
-                      device.status === 'lost' || device.status === 'stolen' 
-                        ? styles.reportedText 
+                      device.status === 'lost' || device.status === 'stolen'
+                        ? styles.reportedText
                         : device.status === 'transferred'
-                        ? styles.transferredText
-                        : device.ownership ? styles.ownedText : styles.unownedText,
+                          ? styles.transferredText
+                          : device.ownership ? styles.ownedText : styles.unownedText,
                     ]}>
-                      {device.status === 'lost' ? 'Lost' : 
-                       device.status === 'stolen' ? 'Stolen' :
-                       device.status === 'transferred' ? 'Transferred' :
-                       device.ownership ? 'Owned' : 'Unowned'}
+                      {device.status === 'lost' ? 'Lost' :
+                        device.status === 'stolen' ? 'Stolen' :
+                          device.status === 'transferred' ? 'Transferred' :
+                            device.ownership ? 'Owned' : 'Unowned'}
                     </Text>
                   </View>
-                  <Pressable 
+                  <Pressable
                     onPress={() => initiateAction('remove', device)}
                     style={styles.removeButton}
                     hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
@@ -339,12 +339,12 @@ export default function HomeScreen() {
               </Pressable>
             </View>
             <Text style={styles.modalSubtitle}>Select a device to transfer</Text>
-            
+
             <ScrollView style={styles.modalDeviceList}>
-              {devices.filter(device => 
-                device.ownership && 
-                device.status !== 'lost' && 
-                device.status !== 'stolen' && 
+              {devices.filter(device =>
+                device.ownership &&
+                device.status !== 'lost' &&
+                device.status !== 'stolen' &&
                 device.status !== 'transferred'
               ).map((device) => (
                 <Pressable
@@ -362,25 +362,25 @@ export default function HomeScreen() {
                   <Feather name="chevron-right" size={18} color="#8494A9" />
                 </Pressable>
               ))}
-              
-              {devices.filter(device => 
-                device.ownership && 
-                device.status !== 'lost' && 
+
+              {devices.filter(device =>
+                device.ownership &&
+                device.status !== 'lost' &&
                 device.status !== 'stolen' &&
                 device.status !== 'transferred'
               ).length === 0 && (
-                <View style={styles.noDevicesMessage}>
-                  <Feather name="info" size={20} color="#8494A9" />
-                  <Text style={styles.noDevicesText}>
-                    You don't have any devices eligible for transfer. Devices that are lost, stolen, or already transferred cannot be transferred.
-                  </Text>
-                </View>
-              )}
+                  <View style={styles.noDevicesMessage}>
+                    <Feather name="info" size={20} color="#8494A9" />
+                    <Text style={styles.noDevicesText}>
+                      You don't have any devices eligible for transfer. Devices that are lost, stolen, or already transferred cannot be transferred.
+                    </Text>
+                  </View>
+                )}
             </ScrollView>
           </View>
         </View>
       </Modal>
-      
+
       {/* PIN Authentication Modal */}
       <Modal
         animationType="fade"
@@ -392,49 +392,55 @@ export default function HomeScreen() {
           setSelectedDeviceAction(null);
         }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.pinModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Enter PIN</Text>
-              <Pressable 
-                onPress={() => {
-                  setShowPinModal(false);
-                  setPin('');
-                  setSelectedDeviceAction(null);
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.pinModalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Security Verification</Text>
+                <Pressable
+                  onPress={() => {
+                    setShowPinModal(false);
+                    setPin('');
+                    setSelectedDeviceAction(null);
+                  }}
+                >
+                  <Feather name="x" size={22} color="#222D3A" />
+                </Pressable>
+              </View>
+              
+              <Text style={styles.pinDescription}>
+                {selectedDeviceAction?.type === 'transfer' ? 'Please enter your PIN to transfer this device' :
+                selectedDeviceAction?.type === 'remove' ? 'Please enter your PIN to remove this device' :
+                'Please enter your PIN to continue'}
+              </Text>
+              
+              <TextInput
+                style={styles.pinInput}
+                value={pin}
+                onChangeText={(text) => {
+                  // Only allow digits and limit to 4 characters
+                  const cleanedText = text.replace(/[^0-9]/g, '').slice(0, 4);
+                  setPin(cleanedText);
                 }}
+                placeholder="••••"
+                keyboardType="number-pad"
+                maxLength={4}
+                secureTextEntry
+                placeholderTextColor="#8494A9"
+              />
+              
+              <Pressable 
+                style={[styles.pinSubmitButton, pin.length === 4 && styles.pinSubmitButtonActive]}
+                onPress={handlePinSubmit}
+                disabled={pin.length !== 4}
               >
-                <Feather name="x" size={20} color="#222D3A" />
+                <Text style={[styles.pinSubmitText, pin.length === 4 && styles.pinSubmitTextActive]}>
+                  Verify
+                </Text>
               </Pressable>
             </View>
-            
-            <Text style={styles.pinDescription}>
-              {selectedDeviceAction?.type === 'transfer' ? 'Please enter your PIN to transfer this device' :
-               selectedDeviceAction?.type === 'remove' ? 'Please enter your PIN to remove this device' :
-               'Please enter your PIN to continue'}
-            </Text>
-            
-            <TextInput
-              style={styles.pinInput}
-              value={pin}
-              onChangeText={setPin}
-              placeholder="Enter 4-digit PIN"
-              keyboardType="number-pad"
-              maxLength={4}
-              secureTextEntry
-              placeholderTextColor="#8494A9"
-            />
-            
-            <Pressable 
-              style={[styles.pinSubmitButton, pin.length === 4 && styles.pinSubmitButtonActive]}
-              onPress={handlePinSubmit}
-              disabled={pin.length !== 4}
-            >
-              <Text style={[styles.pinSubmitText, pin.length === 4 && styles.pinSubmitTextActive]}>
-                Verify
-              </Text>
-            </Pressable>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -693,25 +699,71 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    height: '70%',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   modalTitle: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
+    fontSize: 20,
     color: '#222D3A',
+  },
+  pinDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#8494A9',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  pinInput: {
+    backgroundColor: '#F5F7FA',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 24,
+    marginBottom: 24,
+    textAlign: 'center',
+    letterSpacing: 12,
+    fontFamily: 'Inter-Bold',
+    height: 60,
+    borderWidth: 1,
+    borderColor: '#E5E9F0',
+  },
+  pinSubmitButton: {
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  pinSubmitButtonActive: {
+    backgroundColor: '#5A71E4',
+  },
+  pinSubmitText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: '#8494A9',
+  },
+  pinSubmitTextActive: {
+    color: '#FFFFFF',
   },
   modalSubtitle: {
     fontFamily: 'Inter-Regular',
@@ -765,6 +817,18 @@ const styles = StyleSheet.create({
     color: '#8494A9',
     marginLeft: 12,
     flex: 1,
+  },
+  pinModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   pinModalContent: {
     backgroundColor: '#FFFFFF',

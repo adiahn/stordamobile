@@ -58,132 +58,132 @@ export default function LoginScreen() {
       style={{ flex: 1 }}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <LinearGradient
-            colors={['#F5F7FF', '#FFF0F7']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gradient}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#F5F7FF', '#FFF0F7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}>
 
-            <Animated.View 
-              entering={FadeIn.duration(1000)}
-              style={styles.header}>
-              <View style={styles.logoContainer}>
-                <LinearGradient
-                  colors={['#B4C9FF', '#D6BBFC']}
+        <Animated.View 
+          entering={FadeIn.duration(1000)}
+          style={styles.header}>
+          <View style={styles.logoContainer}>
+            <LinearGradient
+              colors={['#B4C9FF', '#D6BBFC']}
                   style={[styles.logoBackground, { borderRadius: 40 }]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Image
-                    source={{ uri: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2264&auto=format&fit=crop' }}
-                    style={styles.headerImage}
-                  />
-                </LinearGradient>
-              </View>
-              <Text style={styles.title}>Welcome Back</Text>
-              <Text style={styles.subtitle}>Sign in to continue protecting your devices</Text>
-            </Animated.View>
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2264&auto=format&fit=crop' }}
+                style={styles.headerImage}
+              />
+            </LinearGradient>
+          </View>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Sign in to continue protecting your devices</Text>
+        </Animated.View>
 
-            <Animated.View 
-              entering={FadeIn.duration(1000).delay(300)}
-              style={styles.form}>
-              {error && (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
-              )}
+        <Animated.View 
+          entering={FadeIn.duration(1000).delay(300)}
+          style={styles.form}>
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
 
-              <View style={styles.inputGroup}>
-                <View style={styles.inputContainer}>
+          <View style={styles.inputGroup}>
+            <View style={styles.inputContainer}>
                   <Mail size={20} color="#555" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email address"
+              <TextInput
+                style={styles.input}
+                placeholder="Email address"
                     placeholderTextColor="#555"
-                    value={email}
-                    onChangeText={(text) => {
-                      setEmail(text);
-                      setError(null);
-                    }}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoComplete="email"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setError(null);
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
                     returnKeyType="next"
                     onSubmitEditing={() => passwordRef.current?.focus()}
                     blurOnSubmit={false}
-                  />
-                </View>
+              />
+            </View>
 
-                <View style={styles.inputContainer}>
+            <View style={styles.inputContainer}>
                   <Lock size={20} color="#555" style={styles.inputIcon} />
-                  <TextInput
+              <TextInput
                     ref={passwordRef}
-                    style={styles.input}
-                    placeholder="Password"
+                style={styles.input}
+                placeholder="Password"
                     placeholderTextColor="#555"
-                    value={password}
-                    onChangeText={(text) => {
-                      setPassword(text);
-                      setError(null);
-                    }}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setError(null);
+                }}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
                     returnKeyType="done"
                     onSubmitEditing={handleLogin}
-                  />
-                  <Pressable
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}>
-                    {showPassword ? (
+              />
+              <Pressable
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}>
+                {showPassword ? (
                       <EyeOff size={20} color="#555" />
-                    ) : (
+                ) : (
                       <Eye size={20} color="#555" />
-                    )}
-                  </Pressable>
-                </View>
-              </View>
-
-              <Pressable>
-                <Text style={styles.forgotPassword}>Forgot Password?</Text>
+                )}
               </Pressable>
+            </View>
+          </View>
 
-              <AnimatedPressable 
-                style={[styles.loginButton, animatedButtonStyle]} 
-                onPress={handleLogin}
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-              >
-                <LinearGradient
+          <Pressable>
+            <Text style={styles.forgotPassword}>Forgot Password?</Text>
+          </Pressable>
+
+          <AnimatedPressable 
+            style={[styles.loginButton, animatedButtonStyle]} 
+            onPress={handleLogin}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+          >
+            <LinearGradient
                   colors={['#5A71E4', '#8C3BFF']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.buttonGradient}
-                >
-                  <Text style={styles.loginButtonText}>Sign In</Text>
-                  <ArrowRight size={20} color="#FFF" />
-                </LinearGradient>
-              </AnimatedPressable>
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            >
+              <Text style={styles.loginButtonText}>Sign In</Text>
+              <ArrowRight size={20} color="#FFF" />
+            </LinearGradient>
+          </AnimatedPressable>
 
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.dividerLine} />
-              </View>
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-              <View style={styles.socialButtons}>
-                {/* Social login buttons can be added here */}
-              </View>
+          <View style={styles.socialButtons}>
+            {/* Social login buttons can be added here */}
+          </View>
 
-              <View style={styles.signupContainer}>
-                <Text style={styles.signupText}>Don't have an account? </Text>            
-                <Pressable onPress={() => router.push(`/auth/signup`)}>
-                  <Text style={styles.signupLink}>Sign Up</Text>
-                </Pressable>
-              </View>
-            </Animated.View>
-          </LinearGradient>
-        </View>
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>Don't have an account? </Text>            
+              <Pressable onPress={() => router.push(`/auth/signup`)}>
+                <Text style={styles.signupLink}>Sign Up</Text>
+              </Pressable>
+          </View>
+        </Animated.View>
+      </LinearGradient>
+    </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );

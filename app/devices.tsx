@@ -27,7 +27,8 @@ export default function DevicesScreen() {
       storage: '128GB',
       color: 'Sierra Blue',
       registeredBy: 'John Doe',
-      currentOwner: 'John Doe'
+      currentOwner: 'John Doe',
+      ownerNIN: '12345678912' // Added NIN number
     },
     {
       name: 'Samsung Galaxy S22',
@@ -41,7 +42,8 @@ export default function DevicesScreen() {
       storage: '256GB',
       color: 'Phantom Black',
       registeredBy: 'John Doe',
-      currentOwner: 'Jane Smith'
+      currentOwner: 'Jane Smith',
+      ownerNIN: '98765432109' // Added NIN number
     }
   ];
   
@@ -93,7 +95,7 @@ export default function DevicesScreen() {
           <Feather name="search" size={20} color="#8494A9" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder={searchMode === 'id' ? "Enter Device ID (e.g., STD-123456)" : "Enter IMEI number"}
+            placeholder={searchMode === 'id' ? "Enter Device ID (STD-123456)" : "Enter IMEI number"}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#8494A9"
@@ -204,16 +206,6 @@ export default function DevicesScreen() {
                           <Text style={styles.deviceChipText}>{item.color}</Text>
                         </View>
                       )}
-                    </View>
-                    <View style={styles.ownershipInfo}>
-                      <Text style={styles.ownershipText}>
-                        <Text style={styles.ownershipLabel}>Registered by: </Text>
-                        {item.registeredBy || 'Unknown'}
-                      </Text>
-                      <Text style={styles.ownershipText}>
-                        <Text style={styles.ownershipLabel}>Current owner: </Text>
-                        {item.currentOwner || (item.status === 'transferred' ? 'Transferred' : item.registeredBy || 'Unknown')}
-                      </Text>
                     </View>
                   </View>
                   
@@ -455,7 +447,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginBottom: 8,
   },
   deviceImei: {
     fontFamily: 'Inter-Regular',
@@ -473,19 +464,6 @@ const styles = StyleSheet.create({
   deviceChipText: {
     fontFamily: 'Inter-Medium',
     fontSize: 12,
-    color: '#5A71E4',
-  },
-  ownershipInfo: {
-    marginTop: 4,
-  },
-  ownershipText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: '#222D3A',
-    marginBottom: 2,
-  },
-  ownershipLabel: {
-    fontWeight: '600',
     color: '#5A71E4',
   },
   deviceStatus: {
