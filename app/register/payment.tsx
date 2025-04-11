@@ -22,7 +22,7 @@ import { useDeviceStore } from '../store/store';
 
 export default function PaymentPage() {
   const params = useLocalSearchParams();
-  const addDevice = useDeviceStore((state: any) => state.addDevice);
+  const addDevice = useDeviceStore((state) => state.addDevice);
 
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');

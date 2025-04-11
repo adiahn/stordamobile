@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { useDeviceStore } from '../store/store';
+import { useDeviceStore, Device } from '../store/store';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useState, useEffect } from 'react';
@@ -16,12 +16,17 @@ const WALLET_BALANCE = 230; // ₦230 balance
 const USER_PIN = "1234"; // This would be stored securely in a real app
 
 export default function TransferDeviceScreen() {
-  const selectedDevice = useDeviceStore((state: any) => state.selectedDevice);
+  const selectedDevice = useDeviceStore((state) => state.selectedDevice);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [nin, setNin] = useState('');
   const [transferType, setTransferType] = useState<'email' | 'phone'>('email');
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
+  const [requireIdentification, setRequireIdentification] = useState(true);
+  const [transferReason, setTransferReason] = useState('');
+  const [isTransferAgreementChecked, setIsTransferAgreementChecked] = useState(false);
   
   const device = selectedDevice || {
     name: 'Unknown Device',
@@ -30,6 +35,27 @@ export default function TransferDeviceScreen() {
     id: 'Unknown',
     ownership: true,
   };
+
+  // Check device verification status
+  useEffect(() => {
+    if (device.verificationStatus !== 'verified') {
+      Alert.alert(
+        "Verification Required",
+        "To transfer ownership of a device, it must be verified first. Would you like to verify this device now?",
+        [
+          {
+            text: "Cancel",
+            onPress: () => router.back(),
+            style: "cancel"
+          },
+          {
+            text: "Verify Device",
+            onPress: () => router.push('/(tabs)') // Temporarily route to home until verification screen exists
+          }
+        ]
+      );
+    }
+  }, [device]);
 
   // Watch pin length and auto-verify when 4 digits are entered
   useEffect(() => {
@@ -41,76 +67,168 @@ export default function TransferDeviceScreen() {
   }, [pin]);
 
   const initiateTransfer = () => {
-    // Validate input
-    if (transferType === 'email' && !email.trim()) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-    
-    if (transferType === 'phone' && !phone.trim()) {
-      Alert.alert('Error', 'Please enter a valid phone number');
-      return;
-    }
-    
-    // Check if user has enough balance for transfer fee
-    if (WALLET_BALANCE < TRANSFER_FEE) {
-      Alert.alert(
-        'Insufficient Balance',
-        `You need ₦${TRANSFER_FEE} in your wallet to transfer this device. Please top up your wallet.`,
-        [
-          {
-            text: 'Top Up',
-            onPress: () => router.push('/(tabs)/wallet'),
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
-      return;
-    }
+    try {
+      // Validate inputs based on selected transfer type
+      if (transferType === 'email') {
+        if (!validateEmail(email)) {
+          Alert.alert('Error', 'Please enter a valid email address');
+          return;
+        }
+      } else if (transferType === 'phone') {
+        if (!validatePhone(phone)) {
+          Alert.alert('Error', 'Please enter a valid phone number');
+          return;
+        }
+      }
+      
+      // Validate recipient name
+      if (!fullName.trim()) {
+        Alert.alert('Error', 'Please enter the recipient\'s full name');
+        return;
+      }
+      
+      // Validate NIN if identification is required
+      if (requireIdentification && !validateNIN(nin)) {
+        Alert.alert('Error', 'Please enter a valid NIN (11 digits)');
+        return;
+      }
+      
+      // Validate reason for transfer
+      if (!transferReason.trim()) {
+        Alert.alert('Error', 'Please provide a reason for the transfer');
+        return;
+      }
+      
+      // Check transfer agreement
+      if (!isTransferAgreementChecked) {
+        Alert.alert('Error', 'Please agree to the transfer terms');
+        return;
+      }
+      
+      // Check if user has enough balance for transfer fee
+      if (WALLET_BALANCE < TRANSFER_FEE) {
+        Alert.alert(
+          'Insufficient Balance',
+          `You need ₦${TRANSFER_FEE} in your wallet to transfer this device. Please top up your wallet.`,
+          [
+            {
+              text: 'Top Up',
+              onPress: () => router.push('/(tabs)/wallet'),
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+          ]
+        );
+        return;
+      }
 
-    // Show PIN verification modal
-    setShowPinModal(true);
+      // Show PIN verification modal
+      setShowPinModal(true);
+    } catch (error) {
+      console.error("Error initiating transfer:", error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    }
+  };
+
+  // Validation functions
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+  
+  const validatePhone = (phone: string): boolean => {
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
+    return phoneRegex.test(phone);
+  };
+  
+  const validateNIN = (nin: string): boolean => {
+    const ninRegex = /^[0-9]{11}$/;
+    return ninRegex.test(nin);
   };
 
   const handlePinVerification = () => {
-    if (pin !== USER_PIN) {
-      Alert.alert('Error', 'Incorrect PIN. Please try again.');
+    try {
+      if (pin !== USER_PIN) {
+        Alert.alert('Error', 'Incorrect PIN. Please try again.');
+        setPin('');
+        return;
+      }
+
+      // Close the PIN modal
+      setShowPinModal(false);
       setPin('');
-      return;
+
+      // Proceed with transfer after PIN verification
+      completeTransfer();
+    } catch (error) {
+      console.error("Error verifying PIN:", error);
+      Alert.alert('Error', 'Failed to verify PIN. Please try again.');
+      setPin('');
     }
-
-    // Close the PIN modal
-    setShowPinModal(false);
-    setPin('');
-
-    // Proceed with transfer after PIN verification
-    completeTransfer();
   };
 
   const completeTransfer = () => {
-    if (device.key) {
+    try {
+      if (!device.key) {
+        Alert.alert('Error', 'Device key is missing. Cannot complete transfer.');
+        return;
+      }
+      
+      // Prepare recipient info
+      const recipient = transferType === 'email' ? email.trim() : phone.trim();
+      
+      // Create transfer history record
+      const transferRecord = {
+        transferDate: new Date().toISOString(),
+        toEmail: transferType === 'email' ? email : undefined,
+        toPhone: transferType === 'phone' ? phone : undefined,
+        wasVerified: requireIdentification,
+        verificationMethod: requireIdentification ? 'NIN' : undefined,
+        recipientName: fullName,
+        recipientNIN: requireIdentification ? nin : undefined,
+        transferReason: transferReason,
+      };
+      
       // Update device status to transferred
       useDeviceStore.getState().updateDeviceStatus(
         device.key,
         'transferred',
-        transferType === 'email' ? email : phone
+        recipient
       );
+      
+      // Update device with transfer history
+      const updatedDevice = {
+        ...device,
+        status: 'transferred' as const,
+        transferredTo: recipient,
+        currentOwner: fullName,
+        ownerNIN: requireIdentification ? nin : undefined,
+        transferHistory: [
+          ...(device.transferHistory || []),
+          transferRecord
+        ]
+      };
+      
+      // Update selected device in store
+      useDeviceStore.getState().setSelectedDevice(updatedDevice);
+      
+      // Show confirmation message with transfer details
+      Alert.alert(
+        'Device Transfer Initiated',
+        `${device.name} transfer has been initiated to ${fullName}.\n\nThe recipient will receive a confirmation ${transferType === 'email' ? 'email' : 'SMS'} with instructions to accept the transfer.\n\nTransfer ID: TRF-${Math.floor(100000 + Math.random() * 900000)}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => router.push('/(tabs)'),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Error completing transfer:", error);
+      Alert.alert('Error', 'Failed to complete the transfer. Please try again.');
     }
-    
-    // Show success message
-    Alert.alert(
-      'Device Transferred',
-      `${device.name} has been transferred successfully. A fee of ₦${TRANSFER_FEE} has been deducted from your wallet.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => router.push('/(tabs)'),
-        },
-      ]
-    );
   };
 
   return (
@@ -228,6 +346,86 @@ export default function TransferDeviceScreen() {
             style={styles.inputSection}
             entering={FadeInUp.duration(500).delay(300)}
           >
+            {/* Recipient Full Name Input - New */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Recipient's Full Name</Text>
+              <View style={styles.inputWrapper}>
+                <Feather name="user" size={16} color="#8494A9" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter recipient's full name"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  autoCapitalize="words"
+                  placeholderTextColor="#8494A9"
+                  returnKeyType="next"
+                />
+              </View>
+            </View>
+
+            {/* Identification toggle - New */}
+            <View style={styles.switchGroup}>
+              <View style={styles.switchLabelContainer}>
+                <Text style={styles.inputLabel}>Require Identification</Text>
+                <Text style={styles.switchDescription}>Recipient must provide NIN for verification</Text>
+              </View>
+              <Switch
+                value={requireIdentification}
+                onValueChange={setRequireIdentification}
+                trackColor={{ false: "#E5E9F0", true: "#5A71E440" }}
+                thumbColor={requireIdentification ? "#5A71E4" : "#FFFFFF"}
+              />
+            </View>
+
+            {/* NIN Input - New, only shown if requireIdentification is true */}
+            {requireIdentification && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Recipient's NIN</Text>
+                <View style={styles.inputWrapper}>
+                  <Feather name="credit-card" size={16} color="#8494A9" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter 11-digit NIN"
+                    value={nin}
+                    onChangeText={(text) => setNin(text.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={11}
+                    placeholderTextColor="#8494A9"
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Transfer Reason - New */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Reason for Transfer</Text>
+              <View style={styles.inputWrapper}>
+                <Feather name="info" size={16} color="#8494A9" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="E.g., Sold, Gift, Replacement"
+                  value={transferReason}
+                  onChangeText={setTransferReason}
+                  placeholderTextColor="#8494A9"
+                  returnKeyType="next"
+                />
+              </View>
+            </View>
+
+            {/* Transfer Agreement Checkbox - New */}
+            <Pressable 
+              style={styles.checkboxContainer}
+              onPress={() => setIsTransferAgreementChecked(!isTransferAgreementChecked)}
+            >
+              <View style={[styles.checkbox, isTransferAgreementChecked && styles.checkboxChecked]}>
+                {isTransferAgreementChecked && <Feather name="check" size={12} color="#FFFFFF" />}
+              </View>
+              <Text style={styles.checkboxLabel}>
+                I confirm that I am the rightful owner of this device and authorize its transfer
+              </Text>
+            </Pressable>
+
             {transferType === 'email' ? (
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Recipient's Email</Text>
@@ -642,5 +840,46 @@ const styles = StyleSheet.create({
   },
   pinSubmitTextActive: {
     color: '#FFFFFF',
+  },
+  switchGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 4,
+  },
+  switchLabelContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  switchDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: '#8494A9',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 4,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#8494A9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  checkboxChecked: {
+    backgroundColor: '#5A71E4',
+  },
+  checkboxLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: '#8494A9',
   },
 }); 

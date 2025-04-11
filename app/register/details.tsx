@@ -1,15 +1,38 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable } from 'react-native';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import * as Device from 'expo-device';
 import { useDeviceStore, Device as DeviceType } from '../store/store';
+import Modal from '../components/Modal';
+import { debounce, isLowEndDevice } from '../utils/performance';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const STORAGE_OPTIONS = ['64GB', '128GB', '256GB', '512GB', '1TB'];
 const COLORS = ['Midnight Black', 'Sierra Blue', 'Gold', 'Silver', 'Graphite'];
+
+// IMEI validation function (15-17 digits)
+const isValidIMEI = (imei: string): boolean => {
+  const imeiRegex = /^[0-9]{15,17}$/;
+  return imeiRegex.test(imei.replace(/\s/g, ''));
+};
+
+// MAC address validation
+const isValidMacAddress = (mac: string): boolean => {
+  const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+  return macRegex.test(mac);
+};
+
+// Sanitize input to prevent XSS attacks
+const sanitizeInput = (input: string): string => {
+  return input
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/'/g, '&#39;')
+    .replace(/"/g, '&quot;');
+};
 
 export default function DeviceDetailsPage() {
   const params = useLocalSearchParams();
@@ -22,8 +45,21 @@ export default function DeviceDetailsPage() {
   const [hasPhoto, setHasPhoto] = useState(false);
   const [isPreFilled, setIsPreFilled] = useState(false);
   const [deviceModelName, setDeviceModelName] = useState('');
+  
+  // Modal states
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorTitle, setErrorTitle] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [errorType, setErrorType] = useState<'error' | 'warning'>('error');
+  
+  // Verification modal
+  const [verificationModalVisible, setVerificationModalVisible] = useState(false);
+  const [deviceToAdd, setDeviceToAdd] = useState<DeviceType | null>(null);
 
   useEffect(() => {
+    // Check for duplicate IMEI as soon as component loads
+    checkForDuplicateDevice();
+    
     // Check if we have detected information
     if (params.detectedName || params.detectedStorage) {
       setIsPreFilled(true);
@@ -45,25 +81,152 @@ export default function DeviceDetailsPage() {
 
     getDeviceInfo();
   }, [params, model]);
+  
+  // Check for duplicate device immediately
+  const checkForDuplicateDevice = () => {
+    const imei = params.imei as string;
+    if (!imei) {
+      showErrorModal(
+        'Missing IMEI',
+        'The IMEI number is missing. Please go back and provide a valid IMEI.',
+        'error'
+      );
+      return true;
+    }
+    
+    // Validate IMEI format
+    if (!validateImei(imei)) {
+      showErrorModal(
+        'Invalid IMEI',
+        'The IMEI number provided is not valid. Please check and try again.',
+        'error'
+      );
+      return true;
+    }
+    
+    // Check for duplicate devices in store
+    const existingDevices = useDeviceStore.getState().devices;
+    const duplicateDevice = existingDevices.find(dev => dev.imei === imei);
+    
+    if (duplicateDevice) {
+      // Determine if device is already registered or transferred
+      if (duplicateDevice.status === 'transferred') {
+        showErrorModal(
+          'Device Already Transferred',
+          'This device has been transferred to another user. If you recently purchased this device, please ask the previous owner to complete the transfer process.',
+          'error'
+        );
+      } else {
+        showErrorModal(
+          'Device Already Registered',
+          'This device is already registered in the system. If you believe this is an error, please contact support with proof of purchase.',
+          'error'
+        );
+      }
+      return true;
+    }
+    
+    return false; // No duplicate found
+  };
+  
+  const showErrorModal = (title: string, message: string, type: 'error' | 'warning') => {
+    setErrorTitle(title);
+    setErrorMessage(message);
+    setErrorType(type);
+    setErrorModalVisible(true);
+  };
 
   const handleContinue = () => {
-    // Add the device to the store
-    const newDevice: DeviceType = {
-      name: model || deviceModelName,
-      imei: params.imei as string,
-      macAddress: params.macAddress as string,
-      id: `STD-${Math.floor(100000 + Math.random() * 900000)}`, // Generate random ID
-      ownership: true,
-      storage,
-      color, 
-      registrationDate: new Date().toISOString(),
-      status: 'active',
-      key: Date.now() // Use timestamp as key
+    // First check for duplicate device
+    if (checkForDuplicateDevice()) {
+      return; // Stop if duplicate found
+    }
+    
+    const imei = params.imei as string;
+    
+    // Create global IMEI blacklist checker
+    // This would typically be a server API call
+    checkImeiBlacklist(imei).then(blacklistInfo => {
+      if (blacklistInfo.isBlacklisted) {
+        showErrorModal(
+          'Device Blacklisted',
+          `This device appears to be reported as ${blacklistInfo.reason || 'stolen/lost'} in the global registry. Registration is not permitted.`,
+          'error'
+        );
+        return;
+      }
+      
+      // Create the device object
+      const newDevice: DeviceType = {
+        name: model || deviceModelName,
+        imei: imei,
+        macAddress: params.macAddress as string,
+        id: `STD-${Math.floor(100000 + Math.random() * 900000)}`, // Generate random ID
+        ownership: true,
+        storage,
+        color, 
+        registrationDate: new Date().toISOString(),
+        status: 'active',
+        key: Date.now(), // Use timestamp as key
+        // Add verification flags
+        verificationStatus: hasReceipt ? 'verified' : 'pending',
+        verificationMethod: hasReceipt ? 'receipt' : 'none',
+        isImeiVerified: true, // We verified against duplicates
+        isBlacklisted: false, // We checked blacklist
+        verificationDate: hasReceipt ? new Date().toISOString() : undefined,
+      };
+      
+      // Add warning about ownership verification
+      if (!hasReceipt) {
+        setDeviceToAdd(newDevice);
+        setVerificationModalVisible(true);
+        return;
+      }
+      
+      // If receipt is provided, proceed normally
+      addDevice(newDevice);
+      navigateToSuccess(newDevice);
+    }).catch(error => {
+      console.error("Error checking IMEI blacklist:", error);
+      // Allow registration but with warning
+      showErrorModal(
+        'Unable to Verify IMEI',
+        'We couldn\'t verify this device against global databases. You can continue registration, but verification may be required later.',
+        'warning'
+      );
+    });
+  };
+  
+  const handleVerificationContinue = () => {
+    if (deviceToAdd) {
+      addDevice(deviceToAdd);
+      navigateToSuccess(deviceToAdd);
+      setVerificationModalVisible(false);
+    }
+  };
+  
+  // Mock function to check IMEI against blacklist
+  // This would be a real API call in production
+  const checkImeiBlacklist = async (imei: string): Promise<{isBlacklisted: boolean, reason?: string}> => {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Mock blacklist check - in production this would be a real service
+    // For demo purposes, blacklist any IMEI ending with "0000"
+    return {
+      isBlacklisted: imei.endsWith('0000'),
+      reason: imei.endsWith('0000') ? 'stolen' : undefined
     };
-    
-    addDevice(newDevice);
-    
-    // Navigate directly to success screen
+  };
+  
+  // Helper function to validate IMEI format
+  const validateImei = (imei: string): boolean => {
+    // IMEI should be 15 digits long
+    return /^\d{15}$/.test(imei);
+  };
+  
+  // Helper function to navigate to success screen
+  const navigateToSuccess = (device: DeviceType) => {
     router.push({
       pathname: '/register/success',
       params: {
@@ -73,7 +236,8 @@ export default function DeviceDetailsPage() {
         storage,
         color,
         hasReceipt: hasReceipt ? 'true' : 'false',
-        hasPhoto: hasPhoto ? 'true' : 'false'
+        hasPhoto: hasPhoto ? 'true' : 'false',
+        verificationStatus: device.verificationStatus,
       }
     });
   };
@@ -215,6 +379,33 @@ export default function DeviceDetailsPage() {
           <Feather name="arrow-right" size={18} color="#FFF" />
         </Pressable>
       </View>
+
+      {/* Error Modal */}
+      <Modal
+        visible={errorModalVisible}
+        onClose={() => setErrorModalVisible(false)}
+        title={errorTitle}
+        message={errorMessage}
+        type={errorType === 'error' ? 'error' : 'warning'}
+        primaryButtonText="Back"
+        onPrimaryButtonPress={() => {
+          setErrorModalVisible(false);
+          router.back();
+        }}
+      />
+      
+      {/* Verification Modal */}
+      <Modal
+        visible={verificationModalVisible}
+        onClose={() => setVerificationModalVisible(false)}
+        title="Verification Required"
+        message="Without proof of purchase, your device will be registered with pending verification status. You may be asked to provide verification later."
+        type="warning"
+        primaryButtonText="Continue Anyway"
+        secondaryButtonText="Cancel"
+        onPrimaryButtonPress={handleVerificationContinue}
+        onSecondaryButtonPress={() => setVerificationModalVisible(false)}
+      />
     </ScrollView>
   );
 }
