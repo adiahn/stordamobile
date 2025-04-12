@@ -26,22 +26,6 @@ config.transformer.minifierConfig = {
   },
 };
 
-// Enable caching for faster rebuilds
-config.cacheStores = [
-  config.cacheStores[0],
-  config.cacheStores[1],
-  // Add file system cache with larger size
-  {
-    get: config.cacheStores[0].get,
-    set: config.cacheStores[0].set,
-    clear: config.cacheStores[0].clear,
-    type: 'fileStore',
-  },
-];
-
-// Speed up bundle startup by increasing the RAM size for bundle processing
-config.maxRAMPercentage = 0.7; // Use up to 70% of available RAM
-
 // Optimize file watching
 config.watchFolders = [__dirname];
 config.resolver.nodeModulesPaths = [

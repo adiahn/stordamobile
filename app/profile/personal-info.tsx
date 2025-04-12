@@ -7,7 +7,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 export default function PersonalInfoScreen() {
   const params = useLocalSearchParams();
   const [profileData, setProfileData] = useState({
-    name: 'Adnan Mukhtar',
+    name: 'Adnan Muhammad Mukhtar',
     email: 'adnanmukhtar@gmail.com',
     phone: '+2347011313752',
     address: 'No 123, Main Street, Lagos, Nigeria',

@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Adding explicit name property to fix Metro cache errors
+const STORE_NAME = 'deviceStore';
+
 export interface Device {
   name: string;
   imei: string;
@@ -64,6 +67,7 @@ export interface Device {
 }
 
 interface DeviceStore {
+  name: string;
   selectedDevice: Device | null;
   devices: Device[];
   // Selectors
@@ -89,6 +93,7 @@ interface DeviceStore {
 export const useDeviceStore = create<DeviceStore>()(
   persist(
     (set, get) => ({
+      name: STORE_NAME,
       selectedDevice: null,
       devices: [],
       
@@ -259,10 +264,6 @@ export const useDeviceStore = create<DeviceStore>()(
     {
       name: 'device-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({
-        devices: state.devices,
-        // Don't persist selectedDevice to avoid stale references
-      }),
     }
   )
 );

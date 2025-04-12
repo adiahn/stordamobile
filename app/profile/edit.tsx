@@ -91,12 +91,12 @@ export default function EditProfileScreen() {
       >
         <View style={styles.profileImageContainer}>
           <Image
-            source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png' }}
             style={styles.profileImage}
           />
           <TouchableOpacity 
             style={styles.changePhotoButton}
-            onPress={() => Alert.alert('Coming Soon', 'This feature will be available soon')}
+            onPress={() => Alert.alert('Coming Soon', 'This will be available very soon')}
           >
             <Feather name="camera" size={16} color="#5A71E4" />
             <Text style={styles.changePhotoText}>Change Photo</Text>

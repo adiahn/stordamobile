@@ -22,13 +22,13 @@ export default function DeviceDetailsPage() {
       name: model,
       imei: params.imei as string,
       macAddress: params.macAddress as string || '',
-      id: `STD-${Math.floor(100000 + Math.random() * 900000)}`, // Generate random ID
-      ownership: true,
+        id: `STD-${Math.floor(100000 + Math.random() * 900000)}`, // Generate random ID
+        ownership: true,
       storage: storageCapacity,
       color: deviceColor, 
-      registrationDate: new Date().toISOString(),
-      status: 'active',
-      key: Date.now(), // Use timestamp as key
+        registrationDate: new Date().toISOString(),
+        status: 'active',
+        key: Date.now(), // Use timestamp as key
       verificationStatus: hasReceipt || hasPhoto ? 'verified' : 'pending',
       verificationMethod: hasReceipt ? 'receipt' : hasPhoto ? 'photo' : 'none',
     };
@@ -44,29 +44,29 @@ export default function DeviceDetailsPage() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
+    <ScrollView 
         style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
+    >
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
             <Feather name="arrow-left" size={24} color="#333" />
-          </Pressable>
+        </Pressable>
         </View>
 
         <Animated.View
           entering={FadeInDown.duration(600).delay(100)}
           style={styles.titleContainer}
         >
-          <Text style={styles.title}>Device Details</Text>
-          <Text style={styles.subtitle}>Tell us more about your device</Text>
+        <Text style={styles.title}>Device Details</Text>
+        <Text style={styles.subtitle}>Tell us more about your device</Text>
         </Animated.View>
 
-        <Animated.View
+        <Animated.View 
           entering={FadeInDown.duration(600).delay(200)}
           style={styles.detectionBanner}
         >
@@ -84,7 +84,7 @@ export default function DeviceDetailsPage() {
           entering={FadeInDown.duration(600).delay(300)}
           style={styles.formSection}
         >
-          <View style={styles.inputGroup}>
+        <View style={styles.inputGroup}>
             <View style={styles.inputLabelRow}>
               <Text style={styles.inputLabel}>Model Name</Text>
               <Text style={styles.autoDetected}>Auto-detected</Text>
@@ -123,9 +123,9 @@ export default function DeviceDetailsPage() {
                 onSelect={() => setStorageCapacity("1TB")} 
               />
             </View>
-          </View>
+        </View>
 
-          <View style={styles.inputGroup}>
+        <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Device Color</Text>
             <View style={styles.optionsContainer}>
               <ColorOption 
@@ -154,9 +154,9 @@ export default function DeviceDetailsPage() {
                 onSelect={() => setDeviceColor("Graphite")} 
               />
             </View>
-          </View>
+        </View>
 
-          <View style={styles.inputGroup}>
+        <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Additional Documents (Optional)</Text>
             <View style={styles.documentsContainer}>
               <DocumentOption
@@ -173,7 +173,7 @@ export default function DeviceDetailsPage() {
                 selected={hasPhoto}
                 onToggle={() => setHasPhoto(!hasPhoto)}
               />
-            </View>
+              </View>
           </View>
         </Animated.View>
       </ScrollView>
@@ -184,8 +184,8 @@ export default function DeviceDetailsPage() {
       >
         <Text style={styles.registerButtonText}>Register Device</Text>
         <Feather name="arrow-right" size={20} color="#FFF" />
-      </Pressable>
-    </View>
+        </Pressable>
+      </View>
   );
 }
 

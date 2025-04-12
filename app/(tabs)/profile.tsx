@@ -52,7 +52,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [profileData, setProfileData] = useState({
-    name: 'Adnan Asif',
+    name: 'Adnan Muhammad Mukhtar',
     email: 'adnanasif@gmail.com',
     phone: '+1 234 567 8901',
     address: 'New York, USA',
@@ -143,7 +143,7 @@ export default function ProfileScreen() {
               <View style={styles.profileHeader}>
                 <View style={styles.profileImageContainer}>
                   <Image
-                    source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+                    source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png' }}
                     style={styles.profileImage}
                   />
                   <Pressable 
