@@ -54,11 +54,11 @@ export default function ProfileScreen() {
   const [profileData, setProfileData] = useState({
     name: 'Adnan Muhammad Mukhtar',
     email: 'adnanasif@gmail.com',
-    phone: '+1 234 567 8901',
-    address: 'New York, USA',
+    phone: '+234 7011313752',
+    address: 'Katsina State, Nigeria',
     devices: 3,
     transfers: 2,
-    memberSince: '2023'
+    memberSince: '2024'
   });
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function ProfileScreen() {
               <View style={styles.profileHeader}>
                 <View style={styles.profileImageContainer}>
                   <Image
-                    source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png' }}
+                    source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
                     style={styles.profileImage}
                   />
                   <Pressable 
